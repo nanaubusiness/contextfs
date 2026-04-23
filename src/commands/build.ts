@@ -10,7 +10,6 @@ function computeHash(content: string): string {
 }
 
 function extractHash(summaryContent: string): string {
-  // Hash is stored at the end of the file as: hash: <hex>
   const match = summaryContent.match(/hash:\s*([a-f0-9]+)/i);
   return match ? match[1] : "";
 }
@@ -51,14 +50,40 @@ async function processFile(
   return { path: filePath, content: withHash, changed: true };
 }
 
+async function processTargetFile(
+  filePath: string,
+  rootDir: string,
+  summarizer: Awaited<ReturnType<typeof createMockSummarizer>>,
+): Promise<void> {
+  const result = await processFile(filePath, summarizer, false);
+  if (result.changed) {
+    console.error(`[contextfs] Updated: ${path.relative(rootDir, filePath)}`);
+    // Rebuild context map for the affected file
+    const contextMap = await buildContextMap(rootDir, new Map([[result.path, result.content]]));
+    await saveContextMap(rootDir, contextMap);
+  }
+}
+
 export async function runBuild(args: {
   rootDir: string;
   skipHashCheck: boolean;
   useMockLLM: boolean;
+  targetFile?: string;
   anthropicApiKey?: string;
 }): Promise<void> {
-  const { rootDir, skipHashCheck, useMockLLM, anthropicApiKey } = args;
+  const { rootDir, skipHashCheck, useMockLLM, targetFile, anthropicApiKey } = args;
 
+  const summarizer = useMockLLM
+    ? createMockSummarizer()
+    : await createLLMSummarizer(anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "");
+
+  // Single file mode (used by the hook)
+  if (targetFile) {
+    await processTargetFile(targetFile, rootDir, summarizer);
+    return;
+  }
+
+  // Full build mode
   console.error(`[contextfs] Scanning ${rootDir}...`);
 
   const files = await scanFiles(rootDir);
@@ -68,10 +93,6 @@ export async function runBuild(args: {
     console.error("[contextfs] No supported files found. Exiting.");
     return;
   }
-
-  const summarizer = useMockLLM
-    ? createMockSummarizer()
-    : await createLLMSummarizer(anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "");
 
   const summaries = new Map<string, string>();
   let changed = 0;

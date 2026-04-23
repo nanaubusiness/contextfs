@@ -27,38 +27,41 @@ async function main() {
 }
 
 function printUsage() {
-  console.log(`ContextFS - Codebase context system for AI coding tools
+  console.log(`ContextFS - Understand any codebase instantly
 
 Usage:
-  contextfs build [options]      Build summaries for a codebase
-  contextfs query "<text>"       Query the context map
+  contextfs build [options]      Build summaries (or update one file)
+  contextfs query "<text>"       Search summaries
 
 Build options:
-  --root <dir>        Root directory to scan (default: .)
-  --no-hash           Skip hash check, regenerate all summaries
-  --mock              Use mock summarizer (no LLM calls)
+  --root <dir>        Root directory (default: .)
+  --target <file>     Process only this file (for hooks)
+  --no-hash           Skip hash check, regenerate all
+  --mock              Use mock summarizer (default, no LLM needed)
 
 Query options:
   --root <dir>        Root directory (default: .)
-  --limit <n>         Max results to return (default: 5)
+  --limit <n>         Max results (default: 5)
 
 Examples:
-  contextfs build
-  contextfs build --root ./myproject --mock
+  contextfs build                              # Build all
+  contextfs build --target src/auth.ts         # Update one file
   contextfs query "auth"
-  contextfs query "auth" --limit 10
 `);
 }
 
 async function runBuildCommand(args: string[]) {
   let rootDir = process.cwd();
   let skipHashCheck = false;
-  let useMockLLM = false;
+  let useMockLLM = true;
+  let targetFile: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--root" && i + 1 < args.length) {
       rootDir = args[++i];
+    } else if (arg === "--target" && i + 1 < args.length) {
+      targetFile = args[++i];
     } else if (arg === "--no-hash") {
       skipHashCheck = true;
     } else if (arg === "--mock") {
@@ -70,6 +73,7 @@ async function runBuildCommand(args: string[]) {
     rootDir,
     skipHashCheck,
     useMockLLM,
+    targetFile,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   });
 }

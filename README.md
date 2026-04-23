@@ -1,35 +1,28 @@
 # ContextFS
 
-> One command to understand any codebase. Query it instantly. Pay less for AI usage.
+> Understand any codebase instantly. Pay less for AI usage.
 
-[![npm version](https://img.shields.io/npm/v/contextfs)](https://www.npmjs.com/package/contextfs)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## The Problem
 
-Every AI coding tool reads your files to understand your codebase. That costs tokens — every session, every prompt. The more files it needs, the more it costs.
+Every AI coding tool reads your files to understand your codebase. That costs tokens — every session, every prompt.
 
 **You pay when:**
 - The AI re-reads the same files across multiple sessions
-- You paste context manually to explain your project structure
-- Broad context is needed just to locate the right file
+- You paste context manually to explain your project
+- You need to find the right file just to get started
 
-## How It Works
+## The Solution
 
-```
-npm install -g contextfs
-```
+Install once. Everything else is automatic.
 
-Install. The hook runs automatically. That's it.
-
-- First run: `contextfs build` fires on every file save → builds all summaries in the background
-- After that: only the file you changed gets re-summarized — in milliseconds
-- Query by keyword: `contextfs query "auth"` → instant results
+ContextFS builds a map of your entire codebase. Every time you save a file, it quietly updates that file's summary. When you need something, you query — no scanning, no reading, just answers.
 
 ```
 contextfs query "auth"           → auth middleware, login handler, token verifier
-contextfs query "database"     → db client, repository, migrations
-contextfs query "api routes"   → router, endpoint handlers
+contextfs query "database"       → db client, repository, migrations
+contextfs query "api routes"    → router, endpoint handlers
 ```
 
 ## Install
@@ -38,14 +31,14 @@ contextfs query "api routes"   → router, endpoint handlers
 npm install -g contextfs
 ```
 
-Then add this to `~/.claude/settings.json` to activate automatic updates:
+Then add this to `~/.claude/settings.json`:
 
 ```json
 "hooks": {
   "FileChanged": [{
     "hooks": [{
       "type": "command",
-      "command": "contextfs build --root . --mock",
+      "command": "jq -r '.tool_input.file_path // empty' | { read -r f; [ -n \"$f\" ] && contextfs build --root . --mock --target \"$f\"; } 2>/dev/null || true",
       "async": true,
       "statusMessage": "Updating ContextFS summary"
     }]
@@ -53,11 +46,17 @@ Then add this to `~/.claude/settings.json` to activate automatic updates:
 }
 ```
 
-Done. Everything else is automatic.
+Done. That's the last time you do anything.
+
+## What Happens
+
+- **First install:** ContextFS builds summaries for every file in the background
+- **Every file save:** Only that file's summary updates — in milliseconds
+- **Every query:** Instant results, no file scanning
 
 ## Summary Files
 
-Every `.summary` file is plain text:
+Plain text. Human readable.
 
 ```
 Purpose: Handles user authentication and session management
@@ -72,13 +71,11 @@ Risk: high
 hash: abc123def456
 ```
 
-Human readable. Queryable. No JSON.
-
 ## Why It Matters
 
 50 file reads × multiple sessions × token costs = real money.
 
-ContextFS front-loads the work: one install, then query-only. The AI sees only what you ask for, when you ask for it.
+ContextFS front-loads the work. One install. Then query only what you need.
 
 ## License
 
