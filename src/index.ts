@@ -27,15 +27,16 @@ function printUsage() {
   console.log(`ContextFS
 
 Usage:
-  contextfs build                  Build all summaries
+  contextfs build                  Build all summaries (uses LLM)
   contextfs build --target <file> Update one file
+  contextfs build --mock           Use mock summarizer (no LLM)
 `);
 }
 
 async function runBuildCommand(args: string[]) {
   let rootDir = process.cwd();
   let skipHashCheck = false;
-  let useMockLLM = true;
+  let useMockLLM = false;
   let targetFile: string | undefined;
 
   for (let i = 0; i < args.length; i++) {
@@ -46,6 +47,8 @@ async function runBuildCommand(args: string[]) {
       targetFile = args[++i];
     } else if (arg === "--no-hash") {
       skipHashCheck = true;
+    } else if (arg === "--mock") {
+      useMockLLM = true;
     }
   }
 

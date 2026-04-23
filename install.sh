@@ -14,9 +14,16 @@ curl -fsSL "https://github.com/$REPO/releases/download/$LATEST/$TARBALL" -o "$TM
 
 cd "$TMP"
 tar -xzf "$TARBALL"
+
+echo "Running npm install..."
 npm install -g
 
 cd /
 rm -rf "$TMP"
 
-echo "Done! Run: contextfs build"
+echo "Done!"
+echo ""
+echo "IMPORTANT: Set your API key:"
+echo "  export ANTHROPIC_API_KEY=your-key-here"
+echo ""
+echo "Then run: contextfs build"
