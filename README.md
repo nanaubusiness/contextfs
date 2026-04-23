@@ -2,8 +2,6 @@
 
 > Understand any codebase instantly. Pay less for AI usage.
 
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-
 ## The Problem
 
 Every AI coding tool reads your files to understand your codebase. That costs tokens — every session, every prompt.
@@ -21,11 +19,17 @@ ContextFS builds a map of your entire codebase. Every time you save a file, it q
 
 ## Install
 
+**Option 1 — One command (recommended):**
 ```bash
-npm install -g contextfs
+curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
 ```
 
-Then add this to `~/.claude/settings.json`:
+**Option 2 — Download and install manually:**
+1. Download the latest release from: https://github.com/nanaubusiness/contextfs/releases
+2. Extract: `tar -xzf contextfs.tar.gz`
+3. Install: `npm install -g`
+
+Then add this to `~/.claude/settings.json` to activate automatic updates:
 
 ```json
 "hooks": {
