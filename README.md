@@ -89,23 +89,22 @@ First run: builds everything. After that: only updates the file you changed. In 
 
 ## Summary Files
 
-Every `.summary` file is structured JSON:
+Every `.summary` file is plain text — human readable, no JSON:
 
-```json
-{
-  "purpose": "Handles user authentication and session management",
-  "exports": ["login", "logout", "verifyToken"],
-  "dependencies": ["bcrypt", "jsonwebtoken", "./db/user.repository"],
-  "core_logic": [
-    "login: validates credentials, returns JWT on success",
-    "verifyToken: decodes and validates JWT",
-    "logout: invalidates session"
-  ],
-  "risk_level": "high"
-}
+```
+Purpose: Handles user authentication and session management
+Exports: login, logout, verifyToken, refreshSession
+Dependencies: bcrypt, jsonwebtoken, ./db/user.repository
+Core logic:
+  - login
+  - logout
+  - verifyToken
+  - refreshSession
+Risk: high
+hash: abc123def456
 ```
 
-JSON means the summaries are machine-readable and queryable. You don't read them directly — you use `contextfs query` to get human-readable results.
+You read them directly or use `contextfs query` for keyword search.
 
 ## Why It Matters
 

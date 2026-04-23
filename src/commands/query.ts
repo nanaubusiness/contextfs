@@ -1,46 +1,49 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { loadContextMap } from "../index-builder.js";
-import { Summary } from "../types.js";
 
 interface ScoredResult {
   relativePath: string;
   summaryPath: string;
   score: number;
-  summary: Summary;
+  plainText: string;
 }
 
-function scoreFile(
-  query: string,
-  relativePath: string,
-  summary: Summary
-): number {
+function parsePurpose(summaryContent: string): string {
+  const match = summaryContent.match(/^Purpose:\s*(.+)/m);
+  return match ? match[1].trim() : "";
+}
+
+function parseExports(summaryContent: string): string[] {
+  const match = summaryContent.match(/^Exports:\s*(.+)/m);
+  if (!match) return [];
+  const val = match[1].trim();
+  return val === "none" ? [] : val.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function scoreFile(query: string, relativePath: string, summaryContent: string): number {
   const queryLower = query.toLowerCase();
   const filename = path.basename(relativePath).toLowerCase();
   let score = 0;
 
-  // +2 if query matches filename
   if (filename.includes(queryLower)) {
     score += 2;
   }
 
-  // +1 per match in purpose
-  if (summary.purpose.toLowerCase().includes(queryLower)) {
+  const purpose = parsePurpose(summaryContent);
+  if (purpose.toLowerCase().includes(queryLower)) {
     score += 1;
   }
 
-  // +1 per match in core_logic
-  for (const logic of summary.core_logic) {
-    if (logic.toLowerCase().includes(queryLower)) {
+  const exports = parseExports(summaryContent);
+  for (const exp of exports) {
+    if (exp.toLowerCase().includes(queryLower)) {
       score += 1;
     }
   }
 
-  // +1 per match in exports
-  for (const exp of summary.exports) {
-    if (exp.toLowerCase().includes(queryLower)) {
-      score += 1;
-    }
+  if (summaryContent.toLowerCase().includes(queryLower)) {
+    score += 1;
   }
 
   return score;
@@ -59,15 +62,13 @@ export async function runQuery(args: {
   for (const [relativePath, entry] of Object.entries(contextMap.files)) {
     try {
       const summaryContent = await fs.readFile(entry.summary_path, "utf-8");
-      const summary = JSON.parse(summaryContent) as Summary;
-
-      const score = scoreFile(queryText, relativePath, summary);
+      const score = scoreFile(queryText, relativePath, summaryContent);
       if (score > 0) {
         results.push({
           relativePath,
           summaryPath: entry.summary_path,
           score,
-          summary,
+          plainText: summaryContent,
         });
       }
     } catch {
@@ -75,9 +76,7 @@ export async function runQuery(args: {
     }
   }
 
-  // Sort by score descending
   results.sort((a, b) => b.score - a.score);
-
   const top = results.slice(0, limit);
 
   if (top.length === 0) {
@@ -86,17 +85,9 @@ export async function runQuery(args: {
   }
 
   for (const result of top) {
-    console.log(`\n--- ${result.relativePath} (score: ${result.score}) ---`);
-    console.log(`Purpose: ${result.summary.purpose}`);
-    if (result.summary.exports.length > 0) {
-      console.log(`Exports: ${result.summary.exports.join(", ")}`);
-    }
-    if (result.summary.core_logic.length > 0) {
-      console.log(`Core logic:`);
-      for (const logic of result.summary.core_logic) {
-        console.log(`  - ${logic}`);
-      }
-    }
-    console.log(`Risk: ${result.summary.risk_level}`);
+    console.log(`\n=== ${result.relativePath} (score: ${result.score}) ===`);
+    // Print plain text summary, excluding the hash line
+    const lines = result.plainText.split("\n").filter((l) => !l.trim().startsWith("hash:"));
+    console.log(lines.join("\n"));
   }
 }

@@ -1,22 +1,45 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { ContextMap, Summary, FileSummaryEntry } from "./types.js";
+import { ContextMap, FileSummaryEntry } from "./types.js";
+
+function parsePlainTextSummary(content: string): { purpose: string; exports: string[]; dependencies: string[] } {
+  const lines = content.split("\n");
+  let purpose = "";
+  let exports: string[] = [];
+  let dependencies: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("Purpose:")) {
+      purpose = trimmed.slice(8).trim();
+    } else if (trimmed.startsWith("Exports:")) {
+      const val = trimmed.slice(8).trim();
+      exports = val === "none" ? [] : val.split(",").map((s: string) => s.trim()).filter(Boolean);
+    } else if (trimmed.startsWith("Dependencies:")) {
+      const val = trimmed.slice(13).trim();
+      dependencies = val === "none" ? [] : val.split(",").map((s: string) => s.trim()).filter(Boolean);
+    }
+  }
+
+  return { purpose, exports, dependencies };
+}
 
 export async function buildContextMap(
   rootDir: string,
-  summaries: Map<string, Summary>
+  summaries: Map<string, string>
 ): Promise<ContextMap> {
   const files: Record<string, FileSummaryEntry> = {};
 
-  for (const [filePath, summary] of summaries) {
+  for (const [filePath, summaryContent] of summaries) {
     const relativePath = path.relative(rootDir, filePath);
     const summaryPath = `${filePath}.summary`;
+    const { purpose, exports, dependencies } = parsePlainTextSummary(summaryContent);
 
     files[relativePath] = {
       summary_path: summaryPath,
-      exports: summary.exports,
-      dependencies: summary.dependencies,
-      purpose: summary.purpose,
+      purpose,
+      exports,
+      dependencies,
     };
   }
 
