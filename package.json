@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "pkg": "^5.8.1",
     "typescript": "^5.7.0"
   }
 }
