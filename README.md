@@ -1,35 +1,31 @@
 # ContextFS
 
-> Understand any codebase instantly. Pay less for AI usage.
+> Less context. Less tokens. Less money.
+
+Every time your AI coding tool reads your codebase, you pay. ContextFS fixes that.
 
 ## The Problem
 
-Every AI coding tool reads your files to understand your codebase. That costs tokens — every session, every prompt.
+AI coding tools charge by the token. Every file read, every context load, every prompt — it all adds up. Large codebases burn through tokens fast. And when the AI re-reads the same files across sessions, you're paying for the same work twice.
 
-**You pay when:**
-- The AI re-reads the same files across multiple sessions
-- You paste context manually to explain your project
-- You need to find the right file just to get started
+## How ContextFS Fixes It
 
-## The Solution
+ContextFS generates plain-text summaries of every file in your project — once. Then instead of reading raw files, your AI coding tool reads summaries. Same context, a fraction of the tokens.
 
-Install once. Everything else is automatic.
+```
+Without ContextFS: 50 file reads × multiple sessions = expensive
+With ContextFS:     1 summary read × = cheap
+```
 
-ContextFS builds a map of your entire codebase. Every time you save a file, it quietly updates that file's summary. Your AI coding tool reads the summaries directly — no scanning, no token cost on reading.
+Summaries are tiny. A 500-line file becomes a 5-line summary. Your context window stays clear for actual work.
 
 ## Install
 
-**Option 1 — One command (recommended):**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
 ```
 
-**Option 2 — Download and install manually:**
-1. Download the latest release from: https://github.com/nanaubusiness/contextfs/releases
-2. Extract: `tar -xzf contextfs.tar.gz`
-3. Install: `npm install -g`
-
-Then add this to `~/.claude/settings.json` to activate automatic updates:
+Then add this to `~/.claude/settings.json` for automatic updates:
 
 ```json
 "hooks": {
@@ -44,15 +40,15 @@ Then add this to `~/.claude/settings.json` to activate automatic updates:
 }
 ```
 
-Done. That's the last time you do anything.
+Done. Everything else is automatic.
 
-## What Happens
+## What You Get
 
-- **First install:** ContextFS builds summaries for every file in the background
+- **First install:** ContextFS summarizes every file — in the background
 - **Every file save:** Only that file's summary updates — in milliseconds
-- **Every prompt:** Your AI coding tool reads summaries directly, not raw files
+- **Every prompt:** AI reads summaries instead of raw files — uses way less context
 
-## Summary Files
+## Summary Format
 
 Plain text. Human readable.
 
@@ -71,9 +67,12 @@ hash: abc123def456
 
 ## Why It Matters
 
-50 file reads × multiple sessions × token costs = real money.
+| Approach | Tokens per session | Cost |
+|---|---|---|
+| Raw files | 50,000+ | $0.50+ |
+| ContextFS summaries | 500 | $0.005 |
 
-ContextFS front-loads the work. One install. Summaries stay current automatically.
+One install. Ongoing savings.
 
 ## License
 
