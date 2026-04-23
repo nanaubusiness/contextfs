@@ -1,39 +1,36 @@
 # ContextFS
 
-> Structured code summaries that make AI coding tools faster and more focused.
+> One command to understand any codebase. Query it instantly. Pay less for AI usage.
 
 [![npm version](https://img.shields.io/npm/v/contextfs)](https://www.npmjs.com/package/contextfs)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 ## The Problem
 
-Every time you work with an AI coding tool, you're spending tokens to make it understand your codebase. Reading files, processing context, repeating information — it adds up. Fast.
+Every AI coding tool reads your files to understand your codebase. That costs tokens — every session, every prompt. The more files it needs, the more it costs.
 
-**Token costs stack up when:**
+**You pay when:**
 - The AI re-reads the same files across multiple sessions
-- You paste context manually to explain your codebase
-- Large codebases require broad context just to find the right file
+- You paste context manually to explain your project structure
+- Broad context is needed just to locate the right file
 
-ContextFS generates a structured summary for every source file in your project, plus a global context index. When you're working with an AI coding tool, you query the index instead of reading files blindly. The AI gets context instantly — for a fraction of the token cost.
+## How It Works
 
 ```
-Your Codebase (4000 files)
-    ↓
-ContextFS Build (~10 seconds, one-time)
-    ↓
-4000 .summary files + context-map.json
-    ↓
-contextfs query "auth" → instant results, minimal tokens
+contextfs build
 ```
 
-## Features
+One command. ContextFS scans every source file, generates a structured summary for each one, and builds a queryable index. You run it once per project (or let the hook auto-run it).
 
-- **Structured summaries** — purpose, exports, dependencies, core logic per file
-- **Global context index** — `context-map.json` maps your entire codebase
-- **Keyword query** — find files by purpose, exports, or logic in milliseconds
-- **Hash-based caching** — only re-summarizes changed files on re-runs
-- **Works with any AI tool** — Claude, Cursor, Copilot, Codex, any agent
-- **Zero config** — `contextfs build` and you're done
+Then instead of making the AI read files, you query:
+
+```
+contextfs query "auth"           → auth middleware, login handler, token verifier
+contextfs query "database"     → db client, repository, migrations
+contextfs query "api routes"   → router, endpoint handlers
+```
+
+Results are instant. Tokens are minimal.
 
 ## Install
 
@@ -41,54 +38,39 @@ contextfs query "auth" → instant results, minimal tokens
 npm install -g contextfs
 ```
 
-## Quick Start
+Or run without installing:
 
 ```bash
-# Build summaries for your project
-contextfs build --root ./myproject
-
-# Query by keyword
-contextfs query "auth" --root ./myproject
-contextfs query "database connection" --root ./myproject
+npx contextfs build
+npx contextfs query "auth"
 ```
 
-## CLI Reference
+## One Command, Fully Automatic
 
-```
-contextfs build [options]      Build summaries for a codebase
-contextfs query "<text>"       Query the context map
-
-Build options:
-  --root <dir>        Root directory to scan (default: .)
-  --no-hash           Skip hash check, regenerate all summaries
-  --mock              Use heuristic summarizer (no LLM required)
-
-Query options:
-  --root <dir>        Root directory (default: .)
-  --limit <n>         Max results to return (default: 5)
+```bash
+contextfs build
 ```
 
-## Summary Format
+That's it. No config. No flags needed.
 
-Each `file.ts.summary` is strict JSON:
+- Scans all `.ts`, `.js`, `.tsx`, `.jsx`, `.py` files recursively
+- Generates `file.summary` next to each source file
+- Creates `context-map.json` at the project root
+- On re-runs: skips files that haven't changed (SHA-256 hash check)
 
-```json
-{
-  "purpose": "Handles user authentication and session management",
-  "exports": ["login", "logout", "verifyToken"],
-  "dependencies": ["bcrypt", "jsonwebtoken", "./db/user.repository"],
-  "core_logic": [
-    "login: validates credentials, returns JWT on success",
-    "verifyToken: decodes and validates JWT signature",
-    "logout: invalidates token in memory store"
-  ],
-  "risk_level": "high"
-}
+## Query
+
+```bash
+contextfs query "auth"
+contextfs query "payment" --limit 10
+contextfs query "database connection" --root ./backend
 ```
 
-## Claude Code Integration
+Returns the most relevant files with their purpose, exports, and core logic — no reading required.
 
-Add this to `~/.claude/settings.json` to keep summaries auto-updated:
+## Claude Code Hook (Auto-Update)
+
+Add this to `~/.claude/settings.json` and ContextFS runs automatically on every file save:
 
 ```json
 "hooks": {
@@ -103,11 +85,33 @@ Add this to `~/.claude/settings.json` to keep summaries auto-updated:
 }
 ```
 
-On first run, ContextFS builds all summaries. After that, it only updates files you edit — in milliseconds.
+First run: builds everything. After that: only updates the file you changed. In milliseconds.
+
+## Summary Files
+
+Every `.summary` file is structured JSON:
+
+```json
+{
+  "purpose": "Handles user authentication and session management",
+  "exports": ["login", "logout", "verifyToken"],
+  "dependencies": ["bcrypt", "jsonwebtoken", "./db/user.repository"],
+  "core_logic": [
+    "login: validates credentials, returns JWT on success",
+    "verifyToken: decodes and validates JWT",
+    "logout: invalidates session"
+  ],
+  "risk_level": "high"
+}
+```
+
+JSON means the summaries are machine-readable and queryable. You don't read them directly — you use `contextfs query` to get human-readable results.
 
 ## Why It Matters
 
-Reading 50 files to understand a codebase costs tokens and time. Querying summaries costs almost nothing and returns exactly what you need. It's not about the AI not understanding your code — it's about getting to the right context faster.
+50 file reads × multiple sessions × token costs = real money.
+
+ContextFS front-loads the work: one build, then query-only. The AI sees only what you ask for, when you ask for it.
 
 ## License
 
