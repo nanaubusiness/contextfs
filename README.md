@@ -5,18 +5,25 @@
 [![npm version](https://img.shields.io/npm/v/contextfs)](https://www.npmjs.com/package/contextfs)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-## What It Does
+## The Problem
 
-ContextFS generates a structured summary for every source file in your project, plus a global context index. When you're working with an AI coding tool, you query the index instead of reading files blindly. The AI gets context instantly, without parsing thousands of lines.
+Every time you work with an AI coding tool, you're spending tokens to make it understand your codebase. Reading files, processing context, repeating information — it adds up. Fast.
+
+**Token costs stack up when:**
+- The AI re-reads the same files across multiple sessions
+- You paste context manually to explain your codebase
+- Large codebases require broad context just to find the right file
+
+ContextFS generates a structured summary for every source file in your project, plus a global context index. When you're working with an AI coding tool, you query the index instead of reading files blindly. The AI gets context instantly — for a fraction of the token cost.
 
 ```
 Your Codebase (4000 files)
     ↓
-ContextFS Build (~10 seconds)
+ContextFS Build (~10 seconds, one-time)
     ↓
 4000 .summary files + context-map.json
     ↓
-contextfs query "auth" → instant results, no file scanning
+contextfs query "auth" → instant results, minimal tokens
 ```
 
 ## Features
