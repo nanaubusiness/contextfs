@@ -1,0 +1,29 @@
+{
+  "name": "contextfs",
+  "version": "1.0.0",
+  "description": "Transform a codebase into a structured, queryable context system for AI coding tools",
+  "type": "module",
+  "bin": {
+    "contextfs": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "prepublish": "npm run build"
+  },
+  "keywords": [
+    "ai",
+    "codebase",
+    "context",
+    "summaries",
+    "claude"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

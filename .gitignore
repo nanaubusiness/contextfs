@@ -1,0 +1,4 @@
+node_modules/
+dist/
+*.summary
+context-map.json
