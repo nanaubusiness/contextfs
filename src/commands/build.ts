@@ -58,7 +58,6 @@ async function processTargetFile(
   const result = await processFile(filePath, summarizer, false);
   if (result.changed) {
     console.error(`[contextfs] Updated: ${path.relative(rootDir, filePath)}`);
-    // Rebuild context map for the affected file
     const contextMap = await buildContextMap(rootDir, new Map([[result.path, result.content]]));
     await saveContextMap(rootDir, contextMap);
   }
@@ -77,13 +76,11 @@ export async function runBuild(args: {
     ? createMockSummarizer()
     : await createLLMSummarizer(anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "");
 
-  // Single file mode (used by the hook)
   if (targetFile) {
     await processTargetFile(targetFile, rootDir, summarizer);
     return;
   }
 
-  // Full build mode
   console.error(`[contextfs] Scanning ${rootDir}...`);
 
   const files = await scanFiles(rootDir);
