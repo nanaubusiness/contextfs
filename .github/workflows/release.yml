@@ -13,14 +13,18 @@ jobs:
 
       - name: Package source
         run: |
-          tar --exclude='.git' \
+          mkdir /tmp/contextfs-pkg
+          tar \
+              --exclude='.git' \
               --exclude='node_modules' \
               --exclude='dist' \
               --exclude='.github' \
               --exclude='*.summary' \
               --exclude='context-map.json' \
               --exclude='contextfs' \
-              -czf contextfs.tar.gz .
+              --exclude='contextfs-*.tar.gz' \
+              -czf /tmp/contextfs-pkg/contextfs.tar.gz .
+          mv /tmp/contextfs-pkg/contextfs.tar.gz .
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
