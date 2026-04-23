@@ -9,7 +9,10 @@
   "scripts": {
     "build": "tsc",
     "prepublishOnly": "npm run build",
-    "prepublish": "npm run build"
+    "prepublish": "npm run build",
+    "test": "npx tsx test/run-tests.ts",
+    "test:compare": "npx tsx test/comparison-test.ts",
+    "test:llm": "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY npx tsx test/llm-token-test.ts"
   },
   "keywords": [
     "ai",
