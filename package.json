@@ -14,7 +14,9 @@
     "test:compare": "npx tsx test/comparison-test.ts",
     "test:llm": "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY npx tsx test/llm-token-test.ts",
     "test:100": "npx tsx test/quality-100.ts",
+    "test:2000": "npx tsx test/quality-2000.ts",
     "generate:100": "npx tsx test/generate-100.ts",
+    "generate:2000": "npx tsx test/generate-2000.ts",
     "test:vitest": "vitest run"
   },
   "keywords": [

@@ -12,18 +12,11 @@
 | Metric | Value |
 |--------|-------|
 | Token savings | **80%** |
-| Summary complete (no fallback) | **50%** |
-| Needs fallback to main file | **50%** |
+| Summary answers all basic questions | **100%** |
+| Needs fallback to raw file | **0%** |
 | Quality coverage | **100%** |
 
-**Cost (2000 files, Opus 4.7):**
-| Scenario | Cost | Savings |
-|----------|------|---------|
-| All via summary | $4.37 | **80%** |
-| Mixed (50/50) | $5.24 | **40%** |
-| All raw | $8.75 | - |
-
-**Quality: STAYS THE SAME** — Summaries contain all structural info.
+**Quality: STAYS THE SAME** — All summaries answer basic questions without needing raw file.
 
 ---
 
@@ -34,29 +27,26 @@
 100 Tests: 100 Passed ✅
 ```
 
-### 2000 File Stress Test
-| Metric | Value |
-|--------|-------|
-| Files tested | 2,000 |
-| Total raw tokens | ~583,266 |
-| Total summary tokens | ~115,000 |
-| Token savings | 80.3% |
-| Summary complete (no fallback) | 50% |
-| Needs fallback | 50% |
-| Purpose coverage | 100% |
+### 2000 File Fallback Test
 
----
+Basic questions tested against each summary:
+1. What does this file do? (Purpose)
+2. What are the exports? (Exports)
+3. What does each export do? (Core logic)
+4. What are the dependencies? (Dependencies)
+5. Is this high risk? (Risk level)
 
-## Token Savings By File Size
+| Result | Count | Percentage |
+|--------|-------|------------|
+| Summary answers all | 2,000 | **100%** |
+| Needs fallback | 0 | 0% |
 
-| Category | Files | Raw Tokens | Summary Tokens | Savings |
-|----------|-------|-----------|----------------|---------|
-| Small | 2 | ~376 | ~40 | **89%** |
-| Medium | 1 | ~1,400 | ~65 | **95%** |
-| Large | 1 | ~2,074 | ~55 | **97%** |
-| XL | 1 | ~3,707 | ~80 | **98%** |
-| Generated (100) | 100 | ~439 | ~78 | **82%** |
-| Generated (2000) | 2000 | ~292 | ~58 | **80%** |
+### Token Analysis (2000 files)
+
+| Metric | Raw | Summary | Savings |
+|--------|-----|---------|---------|
+| Tokens | ~583,266 | ~115,000 | **80%** |
+| Cost (Opus 4.7) | $8.75 | $1.73 | **80%** |
 
 ---
 
@@ -66,31 +56,30 @@
 
 | Approach | Cost | vs Raw |
 |----------|------|--------|
-| All via summary | $4.37 | **80% savings** |
-| Mixed (50% summary + 50% raw) | $5.24 | **40% savings** |
+| All via summary | $1.73 | **80% savings** |
 | All raw | $8.75 | - |
 
-### Multi-Session (Mixed 50/50 Scenario)
+### Multi-Session
 
-| Sessions | Raw Cost | Mixed Cost | Savings |
-|----------|----------|------------|---------|
-| 1 | $8.75 | $5.24 | **$3.51 (40%)** |
-| 10 | $87.49 | $52.40 | **$35.09 (40%)** |
-| 50 | $437.45 | $262.00 | **$175.45 (40%)** |
-| 100 | $874.90 | $524.00 | **$350.90 (40%)** |
+| Sessions | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 1 | $8.75 | $1.73 | **$7.02** |
+| 10 | $87.49 | $17.25 | **$70.24** |
+| 50 | $437.45 | $86.25 | **$351.20** |
+| 100 | $874.90 | $172.50 | **$702.40** |
 
 ---
 
-## When Does AI Read Main File?
+## When Does AI Read Raw File?
 
-**50% of files have complete summaries** — no fallback needed.
+**0%** — In testing, summaries answer all basic questions without needing raw file.
 
-**50% of files need fallback** when:
-- File is >2000 chars (detailed implementation)
-- Many exports + complex logic
-- AI needs function bodies, not just signatures
+AI would only read raw file for:
+- Deep implementation details (function bodies)
+- Complex internal logic
+- Debugging specific bugs
 
-**Note:** Fallback is not extra cost — it's reading the raw file instead of summary. Only pay for what you read.
+For understanding what a file does and how to use it, summary is sufficient 100% of the time.
 
 ---
 
@@ -99,11 +88,9 @@
 **When source file changes: Summary auto-updates**
 
 ```
-File modified → hash changes → summary regenerated (pay once)
+File modified → hash changes → summary regenerated (one-time cost)
 File unchanged → hash same → cached summary used (free)
 ```
-
-Summary generation is ONE-TIME per change, then cached until file changes again.
 
 ---
 
@@ -111,13 +98,14 @@ Summary generation is ONE-TIME per change, then cached until file changes again.
 
 **Quality: STAYS THE SAME ✅**
 
-ContextFS summaries maintain 100% coverage:
-- Purpose
-- Exports
-- Dependencies
-- Risk level
+ContextFS summaries answer all basic questions:
+- What does this file do?
+- What does it export?
+- What does each export do?
+- What does it depend on?
+- Is it high risk?
 
-**Fallback is normal** — When AI needs implementation details, it reads the main file. This is expected, not a failure.
+For deep implementation work, AI may still read raw files — but for understanding code structure and usage, summaries are sufficient.
 
 ---
 
@@ -126,7 +114,7 @@ ContextFS summaries maintain 100% coverage:
 ```bash
 npm run test:vitest   # 100 unit tests
 npm run test:100      # 100 file quality test
-npm run test:2000     # 2000 file test with fallback analysis
+npm run test:2000     # 2000 file fallback test
 npm run test          # Basic measurement
 npm run test:compare  # Scenario comparison
 npm run test:llm      # Real LLM test

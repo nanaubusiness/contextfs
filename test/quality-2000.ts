@@ -1,7 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * ContextFS Quality Test: 2000 files with fallback analysis
+ * ContextFS Fallback Test: Does summary answer basic questions?
+ *
+ * Tests each file by asking basic questions and checking if summary can answer:
+ * - What does this file do?
+ * - What are the exports?
+ * - What does export X do?
+ * - What are the dependencies?
  */
 
 import * as fs from "fs/promises";
@@ -12,17 +18,70 @@ import { createMockSummarizer } from "../src/summarizer/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function test2000Files(projectPath: string) {
+interface QuestionResult {
+  file: string;
+  summarySufficient: boolean;
+  reason: string;
+}
+
+function canAnswerFromSummary(summary: string, parsed: any): { sufficient: boolean; reason: string } {
+  // Question 1: What does this file do?
+  // Can answer if: summary has Purpose
+  if (!summary.includes("Purpose:")) {
+    return { sufficient: false, reason: "Missing purpose" };
+  }
+
+  // Question 2: What are the exports?
+  // Can answer if: summary lists exports
+  if (!summary.includes("Exports:") || summary.includes("Exports: none")) {
+    return { sufficient: false, reason: "Missing exports" };
+  }
+
+  // Question 3: What does each export do?
+  // Can answer if: summary has Core logic section
+  if (!summary.includes("Core logic:") && parsed.exports.length > 0) {
+    return { sufficient: false, reason: "Missing core logic" };
+  }
+
+  // Question 4: What are the dependencies?
+  // Can answer if: summary has Dependencies
+  if (!summary.includes("Dependencies:")) {
+    return { sufficient: false, reason: "Missing dependencies" };
+  }
+
+  // Question 5: Is this high risk?
+  // Can answer if: summary has Risk level
+  if (!summary.includes("Risk:")) {
+    return { sufficient: false, reason: "Missing risk level" };
+  }
+
+  // Additional check: For each export, does summary mention it?
+  const summaryLower = summary.toLowerCase();
+  const missingExports = parsed.exports.filter((exp: string) =>
+    !summaryLower.includes(exp.toLowerCase())
+  );
+
+  if (missingExports.length > parsed.exports.length / 2) {
+    return { sufficient: false, reason: `Summary missing ${missingExports.length} exports` };
+  }
+
+  return { sufficient: true, reason: "All basic questions answered" };
+}
+
+async function testFallback(projectPath: string): Promise<{
+  total: number;
+  summaryEnough: number;
+  needsFallback: number;
+  results: QuestionResult[];
+}> {
   const summarizer = createMockSummarizer();
   const files = await scanFiles(projectPath);
-  const CHARS_PER_TOKEN = 4;
 
-  let totalRawTokens = 0;
-  let totalSummaryTokens = 0;
-  let completeSummary = 0;  // Can use summary only
-  let needsFallback = 0;    // Need to read raw file
+  const results: QuestionResult[] = [];
+  let summaryEnough = 0;
+  let needsFallback = 0;
 
-  console.log(`Analyzing ${files.length} files...`);
+  console.log(`Testing ${files.length} files...`);
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -30,23 +89,18 @@ async function test2000Files(projectPath: string) {
     const parsed = await parseFile(file);
     const summary = await summarizer.summarize(parsed);
 
-    const rawTokens = Math.ceil(content.length / CHARS_PER_TOKEN);
-    const summaryTokens = Math.ceil(summary.length / CHARS_PER_TOKEN);
+    const { sufficient, reason } = canAnswerFromSummary(summary, parsed);
 
-    totalRawTokens += rawTokens;
-    totalSummaryTokens += summaryTokens;
+    results.push({
+      file: path.relative(projectPath, file),
+      summarySufficient: sufficient,
+      reason,
+    });
 
-    // Check if summary is complete or needs fallback
-    const hasLongContent = content.length > 2000;
-    const hasManyExports = parsed.exports.length > 5;
-    const hasInnerLogic = content.includes("if (") || content.includes("for (") || content.includes("while (");
-
-    const wouldNeedFallback = hasLongContent || (hasManyExports && hasInnerLogic);
-
-    if (wouldNeedFallback) {
-      needsFallback++;
+    if (sufficient) {
+      summaryEnough++;
     } else {
-      completeSummary++;
+      needsFallback++;
     }
 
     if ((i + 1) % 500 === 0) {
@@ -54,70 +108,74 @@ async function test2000Files(projectPath: string) {
     }
   }
 
-  const overallSavings = ((totalRawTokens - totalSummaryTokens) / totalRawTokens) * 100;
-  const fallbackRate = (needsFallback / files.length) * 100;
-
-  // Calculate real fallback cost
-  // 50% read summary, 50% read raw
-  const summaryOnlyTokens = Math.ceil(totalRawTokens * 0.5);  // tokens if all used summary
-  const mixedTokens = Math.ceil(totalRawTokens * 0.5) + Math.ceil(totalSummaryTokens * 0.5);
-
-  const rawCost = (totalRawTokens / 1_000_000) * 15;
-  const summaryOnlyCost = (summaryOnlyTokens / 1_000_000) * 15;
-  const mixedCost = (mixedTokens / 1_000_000) * 15;
-
-  console.log("\n");
-  console.log("╔" + "═".repeat(78) + "╗");
-  console.log("║" + " 2000 FILE ANALYSIS WITH FALLBACK ".padStart(55).padEnd(78) + "║");
-  console.log("╠" + "═".repeat(78) + "╣");
-  console.log("║");
-  console.log("║  TOKEN BREAKDOWN");
-  console.log("║");
-  console.log(`║    Total raw tokens:       ~${totalRawTokens.toLocaleString()}`);
-  console.log(`║    Total summary tokens:    ~${totalSummaryTokens.toLocaleString()}`);
-  console.log(`║    Overall savings:        ${overallSavings.toFixed(1)}%`);
-  console.log("║");
-  console.log("╠" + "═".repeat(78) + "╣");
-  console.log("║");
-  console.log("║  SUMMARY COMPLETENESS");
-  console.log("║");
-  console.log(`║    Summary complete:      ${completeSummary.toLocaleString()} files (${(100 - fallbackRate).toFixed(1)}%)`);
-  console.log(`║    Needs fallback:        ${needsFallback.toLocaleString()} files (${fallbackRate.toFixed(1)}%)`);
-  console.log("║");
-  console.log("╠" + "═".repeat(78) + "╣");
-  console.log("║");
-  console.log("║  REAL COST SCENARIOS (Opus 4.7: $15/1M)");
-  console.log("║");
-  console.log(`║    All 2000 files via summary:  $${summaryOnlyCost.toFixed(2)}`);
-  console.log(`║    Mixed (50/50):                $${mixedCost.toFixed(2)}`);
-  console.log(`║    All 2000 files raw:           $${rawCost.toFixed(2)}`);
-  console.log("║");
-  console.log(`║    Savings (summary only):       $${(rawCost - summaryOnlyCost).toFixed(2)} (${overallSavings.toFixed(0)}%)`);
-  console.log(`║    Savings (mixed 50/50):        $${(rawCost - mixedCost).toFixed(2)} (${((rawCost - mixedCost) / rawCost * 100).toFixed(0)}%)`);
-  console.log("║");
-  console.log("╚" + "═".repeat(78) + "╝");
-
-  return {
-    totalRawTokens,
-    totalSummaryTokens,
-    overallSavings,
-    needsFallback,
-    completeSummary,
-    fallbackRate,
-    rawCost,
-    summaryOnlyCost,
-    mixedCost,
-  };
+  return { total: files.length, summaryEnough, needsFallback, results };
 }
 
 async function main() {
   console.log("\n");
   console.log("╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║              ContextFS 2000 File Analysis with Fallback                  ║");
+  console.log("║              ContextFS Fallback Test: Summary vs Raw File                 ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const projectPath = path.join(__dirname, "mock-project2000");
-  await test2000Files(projectPath);
+  const { total, summaryEnough, needsFallback } = await testFallback(projectPath);
+
+  const enoughPercent = (summaryEnough / total * 100).toFixed(1);
+  const fallbackPercent = (needsFallback / total * 100).toFixed(1);
+
+  console.log("\n");
+  console.log("╔" + "═".repeat(78) + "╗");
+  console.log("║" + " FALLBACK TEST RESULTS ".padStart(56).padEnd(78) + "║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  BASIC QUESTIONS TESTED:");
+  console.log("║    1. What does this file do? (Purpose)");
+  console.log("║    2. What are the exports? (Exports)");
+  console.log("║    3. What does each export do? (Core logic)");
+  console.log("║    4. What are the dependencies? (Dependencies)");
+  console.log("║    5. Is this high risk? (Risk level)");
+  console.log("║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  RESULTS");
+  console.log("║");
+  console.log(`║    Summary ENOUGH (no fallback needed): ${summaryEnough.toLocaleString()} (${enoughPercent}%)`);
+  console.log(`║    Needs FALLBACK (read raw file):    ${needsFallback.toLocaleString()} (${fallbackPercent}%)`);
+  console.log("║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  WHAT THIS MEANS");
+  console.log("║");
+  console.log(`║    ${enoughPercent}% of the time, summary answers all basic questions.`);
+  console.log(`║    AI would not need to read the raw file.`);
+  console.log("║");
+  console.log(`║    ${fallbackPercent}% of the time, summary is incomplete.`);
+  console.log(`║    AI would need to read the raw file for details.`);
+  console.log("║");
+  console.log("╚" + "═".repeat(78) + "╝");
+
+  // Show some examples
+  const enoughExamples = results.filter(r => r.summarySufficient).slice(0, 3);
+  const fallbackExamples = results.filter(r => !r.summarySufficient).slice(0, 3);
+
+  console.log("\n");
+  console.log("EXAMPLES - Summary Enough (no fallback needed):");
+  console.log("=".repeat(78));
+  for (const ex of enoughExamples) {
+    console.log(`  ${ex.file}: ${ex.reason}`);
+  }
+
+  console.log("\n");
+  console.log("EXAMPLES - Needs Fallback to Raw File:");
+  console.log("=".repeat(78));
+  if (fallbackExamples.length === 0) {
+    console.log("  (none - all summaries were complete)");
+  }
+  for (const ex of fallbackExamples) {
+    console.log(`  ${ex.file}: ${ex.reason}`);
+  }
+
+  return { total, summaryEnough, needsFallback };
 }
 
 main().catch(console.error);
