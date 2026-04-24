@@ -82,9 +82,10 @@ Tested with **2,000 REAL production code files** (auth, payments, orders, notifi
 
 | Scenario | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
-| 100 files, 1 session | $0.66 | $0.11 | 83% |
-| 100 files, 10 sessions | $6.60 | $1.10 | 83% |
-| 100 files, 100 sessions | $66.00 | $11.00 | 83% |
+| 2,000 files, 1 session | $40.82 | $2.98 | 93% |
+| 2,000 files, 10 sessions | $408.20 | $29.80 | 93% |
+| 100 files, 1 session | $2.04 | $0.15 | 93% |
+| 100 files, 10 sessions | $20.40 | $1.50 | 93% |
 
 Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
 
