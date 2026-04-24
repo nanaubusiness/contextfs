@@ -67,10 +67,23 @@ hash: abc123def456
 
 ## Why It Matters
 
+Based on real testing with 2,000 files (Opus 4.7 pricing):
+
 | Approach | Tokens per session | Cost |
 |---|---|---|
-| Raw files | 50,000+ | $0.50+ |
-| ContextFS summaries | 500 | $0.005 |
+| Raw files | ~583,000 | $8.75 |
+| ContextFS summaries | ~115,000 | $1.73 |
+| **Savings** | **80%** | **80%** |
+
+For a typical 100-file codebase:
+
+| Approach | Tokens | Cost (Opus 4.7) |
+|---|---|---|
+| Raw files | ~44,000 | $0.66 |
+| ContextFS summaries | ~7,800 | $0.12 |
+| **Savings** | **82%** | **82%** |
+
+Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
 
 One install. Ongoing savings.
 
