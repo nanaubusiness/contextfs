@@ -1,2 +1,5 @@
+test/
 *.summary
-context-map.json
+mock-project2000-real/
+benchmark_results/
+contextfs.tar.gz
