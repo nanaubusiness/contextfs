@@ -14,7 +14,8 @@
     "test:compare": "npx tsx test/comparison-test.ts",
     "test:llm": "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY npx tsx test/llm-token-test.ts",
     "test:100": "npx tsx test/quality-100.ts",
-    "generate:100": "npx tsx test/generate-100.ts"
+    "generate:100": "npx tsx test/generate-100.ts",
+    "test:vitest": "vitest run"
   },
   "keywords": [
     "ai",
@@ -30,6 +31,7 @@
   "devDependencies": {
     "@types/node": "^22.0.0",
     "pkg": "^5.8.1",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.5"
   }
 }
