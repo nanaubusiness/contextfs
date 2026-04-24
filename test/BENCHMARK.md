@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-24
 **Test Runs:** 100 files + 2,000 files + 100 unit tests
-**Pricing:** Haiku ($0.80/1M input tokens)
+**Pricing:** Anthropic Opus 4.7 (Input: $15/1M | Output: $75/1M)
 **Methodology:** Mock summarizer (heuristic-based), 4 chars/token estimation
 
 ---
@@ -12,7 +12,7 @@
 | Metric | Raw Files | ContextFS | Improvement |
 |--------|-----------|-----------|-------------|
 | **Token Count (2000 files)** | ~583,266 | ~115,000 | **80% fewer tokens** |
-| **Cost (Haiku)** | $0.467 | $0.092 | **80% cheaper** |
+| **Cost (Opus 4.7)** | $8.75 | $1.73 | **80% cheaper** |
 | **Quality Coverage** | N/A | 100% | All fields present |
 
 **Quality: STAYS THE SAME** — 100% of summaries contain all required fields
@@ -71,25 +71,25 @@ Range       Files   Visual
 
 ---
 
-## Cost Analysis (Haiku: $0.80/1M)
+## Cost Analysis (Opus 4.7: $15/1M input)
 
 ### 100 Files
 
 | Sessions | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
-| 1 | $0.035 | $0.006 | $0.029 |
-| 10 | $0.351 | $0.062 | **$0.289** |
-| 50 | $1.755 | $0.312 | **$1.443** |
-| 100 | $3.511 | $0.624 | **$2.887** |
+| 1 | $0.66 | $0.11 | $0.55 |
+| 10 | $6.59 | $1.10 | **$5.49** |
+| 50 | $32.93 | $5.50 | **$27.43** |
+| 100 | $65.85 | $11.00 | **$54.85** |
 
 ### 2000 Files
 
 | Sessions | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
-| 1 | $0.467 | $0.092 | $0.375 |
-| 10 | $4.670 | $0.920 | **$3.750** |
-| 50 | $23.350 | $4.600 | **$18.750** |
-| 100 | $46.700 | $9.200 | **$37.500** |
+| 1 | $8.75 | $1.73 | $7.02 |
+| 10 | $87.49 | $17.25 | **$70.24** |
+| 50 | $437.45 | $86.25 | **$351.20** |
+| 100 | $874.90 | $172.50 | **$702.40** |
 
 **Summary generation is ONE-TIME. Subsequent sessions only pay for reading summaries.**
 
