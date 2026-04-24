@@ -76,9 +76,11 @@ Tested with **2,000 REAL production code files** (auth, payments, orders, notifi
 
 **100%** of summaries answered all basic questions without reading raw files.
 
+Real API test (103 files, MiniMax + Haiku): 74.7% token savings confirmed.
+
 ---
 
-## Cost at Opus 4.7 Pricing ($15/1M)
+## Cost at Opus 4.7 Pricing ($15/1M input, $75/1M output)
 
 | Scenario | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|

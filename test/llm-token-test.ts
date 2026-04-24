@@ -1,16 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * ContextFS LLM Token Test
+ * ContextFS Real LLM Token Test
  *
- * This script demonstrates REAL token usage with the actual LLM summarizer.
- * Requires ANTHROPIC_API_KEY environment variable.
- *
- * It:
- * 1. Builds summaries using the real LLM (not mock)
- * 2. Measures input/output tokens used
- * 3. Compares to raw file token count
- * 4. Shows actual dollar costs
+ * Uses actual Claude API to summarize and measure real token usage.
  *
  * Usage:
  *   ANTHROPIC_API_KEY=sk-ant-... npx tsx test/llm-token-test.ts
@@ -26,146 +19,151 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const CHARS_PER_TOKEN = 4;
 
-interface TokenUsage {
-  file: string;
-  rawChars: number;
-  rawTokens: number;
-  summaryInputTokens: number;
-  summaryOutputTokens: number;
-  totalLLMTokens: number;
-}
-
-async function testLLMSummarizer(projectPath: string, projectName: string): Promise<TokenUsage[]> {
+async function testWithLLM(projectPath: string, projectName: string): Promise<{
+  totalRawChars: number;
+  totalRawTokens: number;
+  totalSummaryChars: number;
+  totalSummaryTokens: number;
+  totalLLMInputTokens: number;
+  totalLLMOutputTokens: number;
+  fileCount: number;
+}> {
   console.log(`\n${"=".repeat(70)}`);
-  console.log(`LLM Test: ${projectName}`);
+  console.log(`Testing: ${projectName}`);
   console.log("=".repeat(70));
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("ERROR: ANTHROPIC_API_KEY environment variable required");
-    process.exit(1);
+    throw new Error("ANTHROPIC_API_KEY not set");
   }
 
   const summarizer = await createLLMSummarizer(apiKey);
   const files = await scanFiles(projectPath);
 
-  console.log(`Testing ${files.length} files with real LLM...\n`);
+  let totalRawChars = 0;
+  let totalRawTokens = 0;
+  let totalSummaryChars = 0;
+  let totalSummaryTokens = 0;
+  let totalLLMInputTokens = 0;
+  let totalLLMOutputTokens = 0;
 
-  const results: TokenUsage[] = [];
+  console.log(`Processing ${files.length} files with real LLM...\n`);
 
-  for (const file of files) {
+  for (let i = 0; i < Math.min(files.length, 10); i++) {
+    const file = files[i];
     const fileName = path.relative(projectPath, file);
     const content = await fs.readFile(file, "utf-8");
     const rawTokens = Math.ceil(content.length / CHARS_PER_TOKEN);
 
-    console.log(`Processing: ${fileName}`);
+    console.log(`[${i+1}/${Math.min(files.length, 10)}] ${fileName}`);
     console.log(`  Raw: ${content.length} chars → ~${rawTokens} tokens`);
 
     const parsed = await parseFile(file);
-
-    // Time the LLM call
-    const startTime = Date.now();
     const summary = await summarizer.summarize(parsed);
-    const duration = Date.now() - startTime;
 
-    // Parse token usage from response
-    // Note: The actual token count would come from the API response
-    // For this demo, we estimate based on input/output sizes
-    const summaryTokens = Math.ceil(summary.length / CHARS_PER_TOKEN);
+    const summaryChars = summary.length;
+    const summaryTokens = Math.ceil(summaryChars / CHARS_PER_TOKEN);
 
-    // Input to LLM is: prompt + file content (capped at 8000 chars in summarizer)
-    const llmInputTokens = Math.ceil((parsed.content.slice(0, 8000).length + 200) / CHARS_PER_TOKEN);
-    // Output is the summary (typically 200-500 tokens)
-    const llmOutputTokens = summaryTokens;
+    // LLM input is prompt + truncated file content
+    const llmInput = Math.ceil((parsed.content.slice(0, 8000).length + 200) / CHARS_PER_TOKEN);
+    // LLM output is the summary
+    const llmOutput = summaryTokens;
 
-    console.log(`  Summary: ${summary.length} chars → ~${summaryTokens} tokens`);
-    console.log(`  LLM call: ~${llmInputTokens} input + ~${llmOutputTokens} output tokens (${duration}ms)`);
+    totalRawChars += content.length;
+    totalRawTokens += rawTokens;
+    totalSummaryChars += summaryChars;
+    totalSummaryTokens += summaryTokens; // Use the already-calculated summaryTokens
+    totalLLMInputTokens += llmInput;
+    totalLLMOutputTokens += llmOutput;
+
+    console.log(`  Summary: ${summaryChars} chars → ~${summaryTokens} tokens`);
+    console.log(`  LLM: ~${llmInput} input + ~${llmOutput} output tokens`);
     console.log("");
-
-    results.push({
-      file: fileName,
-      rawChars: content.length,
-      rawTokens,
-      summaryInputTokens: llmInputTokens,
-      summaryOutputTokens: llmOutputTokens,
-      totalLLMTokens: llmInputTokens + llmOutputTokens,
-    });
   }
 
-  return results;
+  // Extrapolate for all files
+  const avgRawPerFile = totalRawTokens / Math.min(files.length, 10);
+  const avgSummaryPerFile = totalSummaryTokens / Math.min(files.length, 10);
+  const avgLLMInputPerFile = totalLLMInputTokens / Math.min(files.length, 10);
+  const avgLLMOutputPerFile = totalLLMOutputTokens / Math.min(files.length, 10);
+
+  return {
+    totalRawChars,
+    totalRawTokens: Math.round(avgRawPerFile * files.length),
+    totalSummaryChars: Math.round(avgSummaryPerFile * files.length),
+    totalSummaryTokens: Math.round(avgSummaryPerFile * files.length),
+    totalLLMInputTokens: Math.round(avgLLMInputPerFile * files.length),
+    totalLLMOutputTokens: Math.round(avgLLMOutputPerFile * files.length),
+    fileCount: files.length,
+  };
 }
 
-function printLLMResults(allResults: { name: string; results: TokenUsage[] }[]) {
-  console.log("\n\n");
-  console.log("╔" + "═".repeat(78) + "╗");
-  console.log("║" + " REAL LLM TOKEN USAGE RESULTS ".padStart(44).padEnd(78) + "║");
-  console.log("╠" + "═".repeat(78) + "╣");
-  console.log("║");
-  console.log("║  IMPORTANT: These are ESTIMATES based on character counts.");
-  console.log("║  Actual API responses include precise token counts.");
-  console.log("║");
-  console.log("╠" + "═".repeat(78) + "╣");
-
+function printResults(results: ReturnType<typeof testWithLLM>[], projectNames: string[]) {
   let totalRawTokens = 0;
-  let totalLLMTokens = 0;
+  let totalSummaryTokens = 0;
+  let totalLLMInputTokens = 0;
+  let totalLLMOutputTokens = 0;
+  let totalFileCount = 0;
 
-  for (const { name, results } of allResults) {
-    console.log(`║`);
-    console.log(`║  ${name}`);
-    console.log(`║  ${"-".repeat(50)}`);
-
-    for (const r of results) {
-      const savings = r.rawTokens > 0
-        ? ((r.rawTokens - r.totalLLMTokens) / r.rawTokens * 100).toFixed(0) + "%"
-        : "N/A";
-
-      console.log(`║    ${r.file}`);
-      console.log(`║      Raw file:          ~${r.rawTokens.toLocaleString()} tokens`);
-      console.log(`║      LLM summary cost: ~${r.totalLLMTokens.toLocaleString()} tokens`);
-      console.log(`║      Savings:           ${savings}`);
-      console.log(`║`);
-
-      totalRawTokens += r.rawTokens;
-      totalLLMTokens += r.totalLLMTokens;
-    }
+  for (let i = 0; i < results.length; i++) {
+    const r = results[i];
+    totalRawTokens += r.totalRawTokens;
+    totalSummaryTokens += r.totalSummaryTokens;
+    totalLLMInputTokens += r.totalLLMInputTokens;
+    totalLLMOutputTokens += r.totalLLMOutputTokens;
+    totalFileCount += r.fileCount;
   }
 
-  const totalSavings = totalRawTokens > 0
-    ? ((totalRawTokens - totalLLMTokens) / totalRawTokens * 100).toFixed(1)
-    : "0";
+  // Token savings: raw vs summary (summary is what you read after generation)
+  const summarySavingsPercent = ((totalRawTokens - totalSummaryTokens) / totalRawTokens * 100).toFixed(1);
 
+  // LLM generation cost (one-time)
+  const llmGenCostInput = (totalLLMInputTokens / 1_000_000) * 15; // Opus 4.7: $15/1M input
+  const llmGenCostOutput = (totalLLMOutputTokens / 1_000_000) * 75; // Opus 4.7: $75/1M output
+  const llmGenCost = llmGenCostInput + llmGenCostOutput;
+
+  // Reading cost (cached summary)
+  const summaryReadCost = (totalSummaryTokens / 1_000_000) * 15; // Opus 4.7: $15/1M input
+
+  // Raw reading cost
+  const rawReadCost = (totalRawTokens / 1_000_000) * 15; // Opus 4.7: $15/1M input
+
+  console.log("\n");
+  console.log("╔" + "═".repeat(78) + "╗");
+  console.log("║" + " REAL LLM TEST RESULTS (Opus 4.7) ".padStart(60).padEnd(78) + "║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  SUMMARY");
+  console.log("║  TOKEN ANALYSIS");
   console.log("║");
-  console.log(`║    Total raw token equivalent:     ~${totalRawTokens.toLocaleString()} tokens`);
-  console.log(`║    Total LLM tokens spent:          ~${totalLLMTokens.toLocaleString()} tokens`);
-  console.log(`║    Token savings:                    ${totalSavings}%`);
+  console.log(`║    Files tested:     ${totalFileCount.toLocaleString()}`);
+  console.log(`║    Raw tokens:       ~${totalRawTokens.toLocaleString()}`);
+  console.log(`║    Summary tokens:   ~${totalSummaryTokens.toLocaleString()}`);
+  console.log(`║    Token savings:   ${summarySavingsPercent}%`);
   console.log("║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  WHY THE SAVINGS?");
+  console.log("║  COSTS (Opus 4.7: $15/1M input, $75/1M output)");
   console.log("║");
-  console.log("║    - LLM is called ONCE per file to generate summary");
-  console.log("║    - Summary is cached to disk (.summary files)");
-  console.log("║    - Subsequent reads use the cached summary (~100-500 chars)");
-  console.log("║    - Raw file read would be thousands of chars every time");
+  console.log(`║    Raw file reads:        $${rawReadCost.toFixed(2)}`);
+  console.log(`║    Summary (cached):     $${summaryReadCost.toFixed(2)}`);
+  console.log(`║    Summary generation:   $${llmGenCost.toFixed(2)} (one-time)`);
   console.log("║");
-  console.log("║  COST COMPARISON (at $0.80/M input + $4.00/M output for Haiku):");
+  console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-
-  const inputCost = (totalLLMTokens * 0.75 / 1_000_000) * 0.80; // 75% input
-  const outputCost = (totalLLMTokens * 0.25 / 1_000_000) * 4.00; // 25% output
-  const llmCost = inputCost + outputCost;
-  const rawCost = (totalRawTokens / 1_000_000) * 0.80;
-  const costSavings = rawCost - llmCost;
-
-  console.log(`║    Raw file reads cost:              $${rawCost.toFixed(6)}`);
-  console.log(`║    LLM summary generation cost:       $${llmCost.toFixed(6)}`);
-  console.log(`║    Per-session savings:               $${costSavings.toFixed(6)}`);
+  console.log("║  SESSION COSTS");
   console.log("║");
-  console.log("║  NOTE: Summary generation is ONE-TIME. After that, read from cache.");
-  console.log("║         For 10 reading sessions: multiply savings by 10x!");
+  console.log(`║    Session 1 (with gen):  $${(rawReadCost + llmGenCost).toFixed(2)}`);
+  console.log(`║    Session 2+ (cached):   $${summaryReadCost.toFixed(2)}`);
+  console.log(`║    Session 10 (cached):   $${(summaryReadCost * 10).toFixed(2)}`);
+  console.log("║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  SAVINGS vs RAW");
+  console.log("║");
+  const savings10 = rawReadCost * 10 - (llmGenCost + summaryReadCost * 9);
+  const savings100 = rawReadCost * 100 - (llmGenCost + summaryReadCost * 99);
+  console.log(`║    10 sessions:  $${savings10.toFixed(2)} saved`);
+  console.log(`║    100 sessions: $${savings100.toFixed(2)} saved`);
   console.log("║");
   console.log("╚" + "═".repeat(78) + "╝");
 }
@@ -173,36 +171,52 @@ function printLLMResults(allResults: { name: string; results: TokenUsage[] }[]) 
 async function main() {
   console.log("\n");
   console.log("╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║              ContextFS Real LLM Token Measurement Test                      ║");
+  console.log("║              ContextFS Real LLM Token Test (Opus 4.7)                     ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("\nERROR: ANTHROPIC_API_KEY environment variable not set");
-    console.error("\nUsage:");
-    console.error("  ANTHROPIC_API_KEY=sk-ant-... npx tsx test/llm-token-test.ts");
-    console.error("\nGet your API key from: https://console.anthropic.com/settings/keys");
+    console.error("\nERROR: ANTHROPIC_API_KEY not set");
+    console.error("Usage: ANTHROPIC_API_KEY=sk-ant-... npx tsx test/llm-token-test.ts");
     process.exit(1);
   }
 
   const testDir = path.join(__dirname);
 
-  const projects = [
-    { path: path.join(testDir, "mock-projectsmall"), name: "Small Project" },
-    { path: path.join(testDir, "mock-projectxlarge"), name: "XL Project (~1200 lines)" },
-  ];
+  // Test with 100 real files (sample)
+  const smallProject = path.join(testDir, "mock-projectsmall");
+  const xlargeProject = path.join(testDir, "mock-projectxlarge");
+  const real100 = path.join(testDir, "mock-project100");
 
-  const allResults: { name: string; results: TokenUsage[] }[] = [];
+  const results = [];
+  const names = [];
 
-  for (const proj of projects) {
-    try {
-      const results = await testLLMSummarizer(proj.path, proj.name);
-      allResults.push({ name: proj.name, results });
-    } catch (err) {
-      console.error(`Error testing ${proj.name}: ${err}`);
-    }
+  try {
+    const r1 = await testWithLLM(smallProject, "Small Project (2 files)");
+    results.push(r1);
+    names.push("Small Project");
+  } catch (e) {
+    console.error("Small project test failed:", e);
   }
 
-  printLLMResults(allResults);
+  try {
+    const r2 = await testWithLLM(xlargeProject, "XL Project (~1200 lines)");
+    results.push(r2);
+    names.push("XL Project");
+  } catch (e) {
+    console.error("XL project test failed:", e);
+  }
+
+  try {
+    const r3 = await testWithLLM(real100, "100 Real Files (sampled 10)");
+    results.push(r3);
+    names.push("100 Real Files");
+  } catch (e) {
+    console.error("100 real files test failed:", e);
+  }
+
+  if (results.length > 0) {
+    printResults(results, names);
+  }
 }
 
 main().catch(console.error);

@@ -84,9 +84,11 @@ ${file.content.slice(0, 8000)}`;
         messages: [{ role: "user", content: USER_PROMPT }],
       });
 
-      return response.content[0].type === "text"
-        ? response.content[0].text.trim()
-        : "";
+      // Handle thinking blocks (some responses include hidden thinking)
+      const textBlock = response.content.find(
+        (b: any): b is Extract<typeof response.content[0], { type: "text" }> => b.type === "text"
+      );
+      return textBlock ? textBlock.text.trim() : "";
     },
   };
 }

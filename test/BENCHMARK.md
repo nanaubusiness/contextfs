@@ -1,8 +1,9 @@
 # ContextFS Benchmark Report
 
-**Date:** 2026-04-24
+**Date:** 2026-04-23
 **Test Files:** 2,000 REAL files (auth, payments, orders, notifications, analytics, inventory)
-**Pricing:** Anthropic Opus 4.7 ($15/1M input tokens)
+**Pricing:** Anthropic Opus 4.7 ($15/1M input, $75/1M output)
+**LLM Test:** MiniMax API with Haiku model (actual API calls)
 
 ---
 
@@ -16,6 +17,8 @@ Based on testing with **2,000 REAL production code files**:
 | **Cost** | $40.82 | $2.98 | **93% cheaper** |
 
 **100%** of summaries answered all basic questions without reading raw files.
+
+Real API test (103 files sampled from 2,000): 74.7% token savings with actual LLM calls.
 
 ---
 
@@ -41,9 +44,9 @@ Based on testing with **2,000 REAL production code files**:
 
 ---
 
-## Cost Analysis (Opus 4.7: $15/1M)
+## Cost Analysis (Opus 4.7: $15/1M input, $75/1M output)
 
-### 2,000 Files (Actual Test)
+### 2,000 Files (Calculated from Real Test)
 
 | Approach | Cost |
 |----------|------|
@@ -58,6 +61,21 @@ Based on testing with **2,000 REAL production code files**:
 | Raw file reads | $2.04 |
 | Summary reads | $0.15 |
 | **Savings** | **$1.89 (93%)** |
+
+---
+
+## Real API Test Results (MiniMax + Haiku)
+
+Tested 103 files with real API calls. Results at Opus 4.7 pricing:
+
+| Metric | Value |
+|--------|-------|
+| Raw tokens (sampled) | ~45,262 |
+| Summary tokens (sampled) | ~11,465 |
+| Token savings | **74.7%** |
+| Raw cost | $0.68 |
+| Summary cost (cached) | $0.17 |
+| Summary generation | $1.59 |
 
 ---
 
@@ -112,7 +130,6 @@ File unchanged → hash same → cached summary used (free)
 
 ```bash
 npm run test          # Basic measurement
-npm run test:100     # 100 file quality test
-npm run test:2000    # 2000 real file test
+npm run test:llm     # Real API test (requires ANTHROPIC_API_KEY)
 npm run test:vitest  # 100 unit tests
 ```
