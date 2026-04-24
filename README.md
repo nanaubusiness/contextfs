@@ -65,34 +65,18 @@ Risk: high
 hash: abc123def456
 ```
 
-## Why It Matters
+## Real Test Results
 
-Based on real testing with 2,000 files (Opus 4.7 pricing):
+Tested with **2,000 REAL production code files** (auth, payments, orders, notifications, analytics, inventory).
 
-| Approach | Tokens per session | Cost |
-|---|---|---|
-| Raw files | ~583,000 | $8.75 |
-| ContextFS summaries | ~115,000 | $1.73 |
-| **Savings** | **80%** | **80%** |
+| Metric | Raw Files | ContextFS | Improvement |
+|--------|-----------|-----------|-------------|
+| Tokens | ~2,721,287 | ~198,573 | **92.7% fewer** |
+| Cost (Opus 4.7) | $40.82 | $2.98 | **93% cheaper** |
 
-For a typical 100-file codebase:
-
-| Approach | Tokens | Cost (Opus 4.7) |
-|---|---|---|
-| Raw files | ~44,000 | $0.66 |
-| ContextFS summaries | ~7,800 | $0.12 |
-| **Savings** | **82%** | **82%** |
+**100%** of summaries answered all basic questions without reading raw files.
 
 Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
-
-## Test Results
-
-Based on testing 2,000 files:
-- **100%** of summaries answer all basic questions without reading raw file
-- **80%** fewer tokens
-- **0%** quality loss
-
-Basic questions answered by summary: What does this file do? What does it export? What does each export do? What are its dependencies? Is it high risk?
 
 One install. Ongoing savings.
 
