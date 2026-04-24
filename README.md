@@ -76,6 +76,26 @@ Tested with **2,000 REAL production code files** (auth, payments, orders, notifi
 
 **100%** of summaries answered all basic questions without reading raw files.
 
+---
+
+## Cost Comparison
+
+### At Opus 4.7 Pricing ($15/1M)
+
+| Scenario | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 2,000 files, 1 session | $40.82 | $2.98 | 93% |
+| 2,000 files, 10 sessions | $408.20 | $29.80 | 93% |
+| 2,000 files, 100 sessions | $4,082.00 | $298.00 | 93% |
+
+### At Haiku Pricing ($0.80/1M)
+
+| Scenario | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 100 files, 1 session | $0.035 | $0.006 | 83% |
+| 100 files, 10 sessions | $0.35 | $0.06 | 83% |
+| 100 files, 100 sessions | $3.51 | $0.62 | 82% |
+
 Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
 
 One install. Ongoing savings.
