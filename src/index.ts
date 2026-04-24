@@ -2,6 +2,7 @@
 
 import { runBuild } from "./commands/build.js";
 import { runQuery } from "./commands/query.js";
+import { runInit } from "./commands/init.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -17,6 +18,8 @@ async function main() {
     await runBuildCommand(args.slice(1));
   } else if (command === "query") {
     await runQueryCommand(args.slice(1));
+  } else if (command === "init") {
+    await runInit();
   } else if (command === "--help" || command === "-h") {
     printUsage();
   } else {
@@ -30,9 +33,10 @@ function printUsage() {
   console.log(`ContextFS
 
 Usage:
+  contextfs init                   Connect ContextFS to Claude Code
   contextfs build                  Build all summaries (requires ANTHROPIC_API_KEY)
   contextfs build --target <file> Update one file
-  contextfs query "<text>"         Search summaries
+  contextfs query "<text>"        Search summaries
 `);
 }
 
@@ -50,8 +54,6 @@ async function runBuildCommand(args: string[]) {
       targetFile = args[++i];
     } else if (arg === "--no-hash") {
       skipHashCheck = true;
-    } else if (arg === "--mock") {
-      useMockLLM = true;
     }
   }
 

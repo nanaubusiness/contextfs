@@ -32,7 +32,7 @@ Then add this to `~/.claude/settings.json` for automatic updates:
   "FileChanged": [{
     "hooks": [{
       "type": "command",
-      "command": "jq -r '.tool_input.file_path // empty' | { read -r f; [ -n \"$f\" ] && contextfs build --root . --mock --target \"$f\"; } 2>/dev/null || true",
+      "command": "jq -r '.tool_input.file_path // empty' | { read -r f; [ -n \"$f\" ] && contextfs build --root . --target \"$f\"; } 2>/dev/null || true",
       "async": true,
       "statusMessage": "Updating ContextFS summary"
     }]
