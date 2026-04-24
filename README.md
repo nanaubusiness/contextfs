@@ -67,27 +67,25 @@ hash: abc123def456
 
 ## Real Test Results
 
-Tested with **2,000 REAL production code files** (auth, payments, orders, notifications, analytics, inventory).
+Tested with **2,000 REAL production code files** (auth, payments, orders, notifications, analytics, inventory) using MiniMax Haiku API.
 
 | Metric | Raw Files | ContextFS | Improvement |
 |--------|-----------|-----------|-------------|
-| Tokens | ~2,721,287 | ~198,573 | **92.7% fewer** |
-| Cost (Opus 4.7) | $40.82 | $2.98 | **93% cheaper** |
+| Tokens | ~2,721,287 | ~648,462 | **76.1% fewer** |
+| Cost (Opus 4.7) | $40.82 | $9.73 | **76% cheaper** |
 
 **100%** of summaries answered all basic questions without reading raw files.
 
-Real API test (103 files, MiniMax + Haiku): 74.7% token savings confirmed.
-
 ---
 
-## Cost at Opus 4.7 Pricing ($15/1M input, $75/1M output)
+## Cost at Opus 4.7 Pricing ($15/1M input)
 
 | Scenario | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
-| 2,000 files, 1 session | $40.82 | $2.98 | 93% |
-| 2,000 files, 10 sessions | $408.20 | $29.80 | 93% |
-| 100 files, 1 session | $2.04 | $0.15 | 93% |
-| 100 files, 10 sessions | $20.40 | $1.50 | 93% |
+| 2,000 files, 1 session | $40.82 | $9.73 | 76% |
+| 2,000 files, 10 sessions | $408.20 | $97.30 | 76% |
+| 100 files, 1 session | $2.04 | $0.49 | 76% |
+| 100 files, 10 sessions | $20.40 | $4.90 | 76% |
 
 Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
 
