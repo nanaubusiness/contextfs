@@ -43,13 +43,27 @@ Based on testing with **2,000 REAL production code files**:
 
 ## Cost Analysis (Opus 4.7: $15/1M)
 
+### 2,000 Files (Actual Test)
+
 | Approach | Cost |
 |----------|------|
 | Raw file reads | $40.82 |
 | Summary reads | $2.98 |
 | **Savings** | **$37.84 (93%)** |
 
-### Multi-Session
+### 100 Files (Calculated from Test)
+
+| Approach | Cost |
+|----------|------|
+| Raw file reads | $2.04 |
+| Summary reads | $0.15 |
+| **Savings** | **$1.89 (93%)** |
+
+---
+
+## Multi-Session Costs
+
+### 2,000 Files
 
 | Sessions | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
@@ -57,6 +71,15 @@ Based on testing with **2,000 REAL production code files**:
 | 10 | $408.20 | $29.80 | **$378.40** |
 | 50 | $2,041.00 | $149.00 | **$1,892.00** |
 | 100 | $4,082.00 | $298.00 | **$3,784.00** |
+
+### 100 Files
+
+| Sessions | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 1 | $2.04 | $0.15 | $1.89 |
+| 10 | $20.40 | $1.50 | **$18.90** |
+| 50 | $102.00 | $7.50 | **$94.50** |
+| 100 | $204.00 | $15.00 | **$189.00** |
 
 ---
 
@@ -91,5 +114,5 @@ File unchanged → hash same → cached summary used (free)
 npm run test          # Basic measurement
 npm run test:100     # 100 file quality test
 npm run test:2000    # 2000 real file test
-npm run test:vitest   # 100 unit tests
+npm run test:vitest  # 100 unit tests
 ```
