@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * ContextFS Quality Test: 2000 files
+ * ContextFS Quality Test: 2000 files with fallback analysis
+ * Measures: token savings, quality coverage, and when AI needs main file
  */
 
 import * as fs from "fs/promises";
@@ -12,24 +13,17 @@ import { createMockSummarizer } from "../src/summarizer/index.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-interface FileQuality {
-  rawTokens: number;
-  summaryTokens: number;
-  savingsPercent: number;
-  hasPurpose: boolean;
-  hasRisk: boolean;
-}
-
 async function test2000Files(projectPath: string) {
   const summarizer = createMockSummarizer();
   const files = await scanFiles(projectPath);
   const CHARS_PER_TOKEN = 4;
 
-  const qualities: FileQuality[] = [];
   let totalRawTokens = 0;
   let totalSummaryTokens = 0;
+  let needsFallback = 0;
+  let completeSummary = 0;
 
-  console.log(`Testing ${files.length} files...`);
+  console.log(`Analyzing ${files.length} files...`);
 
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
@@ -39,47 +33,45 @@ async function test2000Files(projectPath: string) {
 
     const rawTokens = Math.ceil(content.length / CHARS_PER_TOKEN);
     const summaryTokens = Math.ceil(summary.length / CHARS_PER_TOKEN);
-    const savings = rawTokens > 0 ? ((rawTokens - summaryTokens) / rawTokens) * 100 : 0;
 
     totalRawTokens += rawTokens;
     totalSummaryTokens += summaryTokens;
 
-    qualities.push({
-      rawTokens,
-      summaryTokens,
-      savingsPercent: savings,
-      hasPurpose: summary.includes("Purpose:"),
-      hasRisk: summary.includes("Risk:"),
-    });
+    // Analyze if summary is "complete" or needs fallback
+    // Summary is complete if: it has purpose, exports, deps, risk, and core logic
+    // Needs fallback if: file has complex logic, long functions, or detailed implementation
+    const hasPurpose = summary.includes("Purpose:");
+    const hasExports = summary.includes("Exports:");
+    const hasDeps = summary.includes("Dependencies:");
+    const hasRisk = summary.includes("Risk:");
+    const hasCoreLogic = summary.includes("Core logic:");
+    const hasManyExports = parsed.exports.length > 5;
+    const hasLongContent = content.length > 2000;
+    const hasInnerLogic = content.includes("if (") || content.includes("for (") || content.includes("while (");
+
+    const summaryComplete = hasPurpose && hasExports && hasDeps && hasRisk && hasCoreLogic;
+    const wouldNeedFallback = hasLongContent || (hasManyExports && hasInnerLogic);
+
+    if (summaryComplete && !wouldNeedFallback) {
+      completeSummary++;
+    } else {
+      needsFallback++;
+    }
 
     if ((i + 1) % 500 === 0) {
       console.log(`  Processed ${i + 1}/${files.length}...`);
     }
   }
 
-  const savings = qualities.map(q => q.savingsPercent);
-  const avgSavings = savings.reduce((a, b) => a + b, 0) / savings.length;
-  const minSavings = Math.min(...savings);
-  const maxSavings = Math.max(...savings);
-  const variance = savings.reduce((a, b) => a + Math.pow(b - avgSavings, 2), 0) / savings.length;
-  const stdDevSavings = Math.sqrt(variance);
-
-  const overallSavings = totalRawTokens > 0 ? ((totalRawTokens - totalSummaryTokens) / totalRawTokens) * 100 : 0;
-  const purposeCoverage = (qualities.filter(q => q.hasPurpose).length / qualities.length) * 100;
-  const riskCoverage = (qualities.filter(q => q.hasRisk).length / qualities.length) * 100;
+  const overallSavings = ((totalRawTokens - totalSummaryTokens) / totalRawTokens) * 100;
+  const fallbackRate = (needsFallback / files.length) * 100;
 
   console.log("\n");
   console.log("╔" + "═".repeat(78) + "╗");
-  console.log("║" + " 2000 FILE QUALITY TEST RESULTS ".padStart(45).padEnd(78) + "║");
+  console.log("║" + " 2000 FILE ANALYSIS WITH FALLBACK ".padStart(55).padEnd(78) + "║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  TOKEN SAVINGS ANALYSIS");
-  console.log("║");
-  console.log(`║    Files tested:           ${qualities.length.toLocaleString()}`);
-  console.log(`║    Average savings:        ${avgSavings.toFixed(1)}%`);
-  console.log(`║    Minimum savings:        ${minSavings.toFixed(1)}%`);
-  console.log(`║    Maximum savings:        ${maxSavings.toFixed(1)}%`);
-  console.log(`║    Std deviation:          ${stdDevSavings.toFixed(1)}%`);
+  console.log("║  TOKEN SAVINGS");
   console.log("║");
   console.log(`║    Total raw tokens:       ~${totalRawTokens.toLocaleString()}`);
   console.log(`║    Total summary tokens:    ~${totalSummaryTokens.toLocaleString()}`);
@@ -87,88 +79,64 @@ async function test2000Files(projectPath: string) {
   console.log("║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  SUMMARY QUALITY METRICS");
+  console.log("║  SUMMARY COMPLETENESS");
   console.log("║");
-  console.log(`║    Purpose field:          ${purposeCoverage.toFixed(1)}% coverage`);
-  console.log(`║    Risk field:             ${riskCoverage.toFixed(1)}% coverage`);
+  console.log(`║    Summary is complete:     ${completeSummary.toLocaleString()} (${(100 - fallbackRate).toFixed(1)}%)`);
+  console.log(`║    Needs fallback:          ${needsFallback.toLocaleString()} (${fallbackRate.toFixed(1)}%)`);
   console.log("║");
-  console.log("╠" + "═".repeat(78) + "╣");
-  console.log("║");
-  console.log("║  COST COMPARISON");
-  console.log("║");
-
-  const rawCostHaiku = (totalRawTokens / 1_000_000) * 0.80;
-  const summaryCostHaiku = (totalSummaryTokens / 1_000_000) * 0.80;
-
-  console.log(`║    Raw file reads (Haiku):    $${rawCostHaiku.toFixed(6)}`);
-  console.log(`║    Summary reads (Haiku):      $${summaryCostHaiku.toFixed(6)}`);
-  console.log(`║    Savings per session:         $${(rawCostHaiku - summaryCostHaiku).toFixed(6)}`);
+  console.log("║    Note: Fallback means AI would read main file for more details.");
   console.log("║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  SAVINGS DISTRIBUTION");
+  console.log("║  COST (Opus 4.7: $15/1M input)");
   console.log("║");
-
-  const buckets = [
-    [0, 60], [60, 70], [70, 80], [80, 85], [85, 90], [90, 100]
-  ];
-
-  for (const [min, max] of buckets) {
-    const count = qualities.filter(f => f.savingsPercent >= min && f.savingsPercent < max).length;
-    const bar = "█".repeat(Math.round((count / qualities.length) * 50));
-    const label = min === 0 ? `<${max}%` : `${min}-${max}%`;
-    console.log(`║    ${label.padEnd(10)} ${String(count).padStart(5)} ${bar}`);
-  }
+  const rawCost = (totalRawTokens / 1_000_000) * 15;
+  const summaryCost = (totalSummaryTokens / 1_000_000) * 15;
+  console.log(`║    Raw file reads:           $${rawCost.toFixed(2)}`);
+  console.log(`║    Summary reads:            $${summaryCost.toFixed(2)}`);
+  console.log(`║    Savings per session:      $${(rawCost - summaryCost).toFixed(2)} (${overallSavings.toFixed(0)}%)`);
+  console.log("║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  WHEN AI NEEDS MAIN FILE");
+  console.log("║");
+  console.log(`║    ${fallbackRate.toFixed(1)}% of files may need fallback to main file`);
+  console.log(`║    This happens when:`);
+  console.log(`║    - File is >2000 chars (detailed implementation)`);
+  console.log(`║    - Many exports + complex logic`);
+  console.log(`║    - AI needs to see function bodies, not just signatures`);
+  console.log("║");
+  console.log("╠" + "═".repeat(78) + "╣");
+  console.log("║");
+  console.log("║  FILE UPDATE BEHAVIOR");
+  console.log("║");
+  console.log(`║    When source file changes: Summary is auto-updated (hash check)`);
+  console.log(`║    - If file hash changed → summary regenerated`);
+  console.log(`║    - If hash unchanged → cached summary used`);
+  console.log(`║    This means: Only pay for summary generation once per change`);
   console.log("║");
   console.log("╚" + "═".repeat(78) + "╝");
 
   return {
-    totalFiles: qualities.length,
-    avgSavings,
-    minSavings,
-    maxSavings,
-    stdDevSavings,
     totalRawTokens,
     totalSummaryTokens,
     overallSavings,
-    purposeCoverage,
-    riskCoverage,
+    needsFallback,
+    completeSummary,
+    fallbackRate,
+    rawCost,
+    summaryCost,
   };
 }
 
 async function main() {
   console.log("\n");
   console.log("╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║              ContextFS 2000 File Quality Test                           ║");
+  console.log("║              ContextFS 2000 File Analysis with Fallback                  ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const projectPath = path.join(__dirname, "mock-project2000");
-  const results = await test2000Files(projectPath);
-
-  // Update benchmark file
-  const benchmarkPath = path.join(__dirname, "BENCHMARK.md");
-  const benchmark = await fs.readFile(benchmarkPath, "utf-8");
-
-  const updated = benchmark.replace(
-    /## Executive Summary[\s\S]*?## Detailed Token Savings/,
-    `## Executive Summary
-
-| Metric | Raw Files | ContextFS | Improvement |
-|--------|-----------|-----------|-------------|
-| **Token Count** | ~${results.totalRawTokens.toLocaleString()} | ~${results.totalSummaryTokens.toLocaleString()} | **${results.overallSavings.toFixed(1)}% fewer tokens** |
-| **Summary Size** | N/A | ${Math.round(results.totalSummaryTokens / results.totalFiles)} chars avg | ${results.overallSavings.toFixed(0)}% smaller |
-| **Cost (Haiku)** | $${((results.totalRawTokens / 1_000_000) * 0.80).toFixed(3)}/read | $${((results.totalSummaryTokens / 1_000_000) * 0.80).toFixed(3)}/read | **${results.overallSavings.toFixed(0)}% cheaper** |
-| **Quality Coverage** | N/A | ${results.purposeCoverage.toFixed(0)}% | All fields present |
-
-**Quality: STAYS THE SAME** — ${results.purposeCoverage.toFixed(0)}% of summaries contain all required fields (Purpose, Exports, Dependencies, Risk)
-
----
-
-## Detailed Token Savings`
-  );
-
-  await fs.writeFile(benchmarkPath, updated);
-  console.log("\nBenchmark updated!");
+  await test2000Files(projectPath);
 }
 
 main().catch(console.error);
