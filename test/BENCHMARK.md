@@ -19,9 +19,8 @@ Based on testing with **2,000 REAL production code files**:
 
 ---
 
-## Test Results
+## Real Files Tested
 
-### Real Files Tested
 - **Auth Service** - login, register, password reset, email verification
 - **Payment Service** - payment intents, refunds, Stripe integration
 - **User Profile** - avatar upload, address management, social links
@@ -30,7 +29,9 @@ Based on testing with **2,000 REAL production code files**:
 - **Analytics** - event tracking, user metrics, revenue, retention
 - **Inventory** - stock management, low stock alerts, valuation
 
-### Token Savings
+---
+
+## Token Savings
 
 | Metric | Value |
 |--------|-------|
@@ -38,7 +39,9 @@ Based on testing with **2,000 REAL production code files**:
 | Total summary tokens | ~198,573 |
 | **Token savings** | **92.7%** |
 
-### Cost Analysis (Opus 4.7: $15/1M)
+---
+
+## Cost Analysis (Opus 4.7: $15/1M)
 
 | Approach | Cost |
 |----------|------|
@@ -87,6 +90,6 @@ File unchanged → hash same → cached summary used (free)
 ```bash
 npm run test          # Basic measurement
 npm run test:100     # 100 file quality test
-npm run test:2000     # 2000 real file test
+npm run test:2000    # 2000 real file test
 npm run test:vitest   # 100 unit tests
 ```
