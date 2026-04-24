@@ -4,6 +4,16 @@ import { ParsedFile } from "../types.js";
 
 const SUPPORTED_EXTENSIONS = new Set([".ts", ".js", ".tsx", ".jsx", ".py"]);
 
+const IGNORED_DIRS = new Set([
+  "node_modules",
+  "dist",
+  ".git",
+  ".claude",
+  "__pycache__",
+  ".venv",
+  "venv",
+]);
+
 export async function scanFiles(rootDir: string): Promise<string[]> {
   const files: string[] = [];
 
@@ -18,7 +28,9 @@ export async function scanFiles(rootDir: string): Promise<string[]> {
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        await walk(fullPath);
+        if (!IGNORED_DIRS.has(entry.name)) {
+          await walk(fullPath);
+        }
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name);
         if (SUPPORTED_EXTENSIONS.has(ext)) {

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { runBuild } from "./commands/build.js";
+import { runQuery } from "./commands/query.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -14,6 +15,8 @@ async function main() {
 
   if (command === "build") {
     await runBuildCommand(args.slice(1));
+  } else if (command === "query") {
+    await runQueryCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
     printUsage();
   } else {
@@ -27,9 +30,9 @@ function printUsage() {
   console.log(`ContextFS
 
 Usage:
-  contextfs build                  Build all summaries (uses LLM)
+  contextfs build                  Build all summaries (requires ANTHROPIC_API_KEY)
   contextfs build --target <file> Update one file
-  contextfs build --mock           Use mock summarizer (no LLM)
+  contextfs query "<text>"         Search summaries
 `);
 }
 
@@ -59,6 +62,27 @@ async function runBuildCommand(args: string[]) {
     targetFile,
     anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   });
+}
+
+async function runQueryCommand(args: string[]) {
+  let rootDir = process.cwd();
+  let queryText = "";
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--root" && i + 1 < args.length) {
+      rootDir = args[++i];
+    } else {
+      queryText = arg;
+    }
+  }
+
+  if (!queryText) {
+    console.error("Usage: contextfs query \"<search text>\" [--root <dir>]");
+    process.exit(1);
+  }
+
+  await runQuery({ rootDir, queryText });
 }
 
 main().catch((err) => {
