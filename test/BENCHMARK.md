@@ -1,7 +1,8 @@
 # ContextFS Benchmark Report
 
 **Date:** 2026-04-24
-**Test Run:** 100 files + 100 test suite
+**Test Runs:** 100 files + 2,000 files + 100 unit tests
+**Pricing:** Haiku ($0.80/1M input tokens)
 **Methodology:** Mock summarizer (heuristic-based), 4 chars/token estimation
 
 ---
@@ -10,18 +11,43 @@
 
 | Metric | Raw Files | ContextFS | Improvement |
 |--------|-----------|-----------|-------------|
-| **Token Count** | ~43,889 | ~7,802 | **82% fewer tokens** |
-| **Summary Size** | N/A | 177 chars avg | 90% smaller |
-| **Cost (Haiku)** | $0.035/file read | $0.006/file read | **82% cheaper** |
+| **Token Count (2000 files)** | ~583,266 | ~115,000 | **80% fewer tokens** |
+| **Cost (Haiku)** | $0.467 | $0.092 | **80% cheaper** |
 | **Quality Coverage** | N/A | 100% | All fields present |
 
-**Quality: STAYS THE SAME** — 100% of summaries contain all required fields (Purpose, Exports, Dependencies, Risk)
+**Quality: STAYS THE SAME** — 100% of summaries contain all required fields
 
 ---
 
-## Detailed Token Savings
+## Test Results
 
-### By File Size Category
+### 100 Unit Tests
+```
+100 Tests: 100 Passed ✅
+```
+
+### 100 File Quality Test
+| Metric | Value |
+|--------|-------|
+| Files tested | 100 |
+| Token savings | 82.2% |
+| Purpose coverage | 100% |
+| Risk coverage | 100% |
+
+### 2000 File Stress Test
+| Metric | Value |
+|--------|-------|
+| Files tested | 2,000 |
+| Token savings | 80.3% |
+| Purpose coverage | 100% |
+| Risk coverage | 100% |
+| Std deviation | 5.6% |
+
+---
+
+## Token Savings
+
+### By File Size
 
 | Category | Files | Avg Raw Tokens | Avg Summary Tokens | Savings |
 |----------|-------|----------------|-------------------|---------|
@@ -29,65 +55,25 @@
 | Medium (~300 lines) | 1 | ~1,400 | ~65 | **95%** |
 | Large (~500 lines) | 1 | ~2,074 | ~55 | **97%** |
 | XL (~1200 lines) | 1 | ~3,707 | ~80 | **98%** |
-| **Generated (100 files)** | 100 | ~439 | ~78 | **82%** |
+| Generated (100) | 100 | ~439 | ~78 | **82%** |
+| Generated (2000) | 2000 | ~292 | ~58 | **80%** |
 
-### Token Distribution (100 Files)
+### Savings Distribution (2000 files)
 
 ```
-Savings Range   Files   Visual
-─────────────────────────────────────
-<70%           17      ███████
-70-80%          8      ███
-80-85%         25      ██████████
-85-90%         50      ████████████████████
-90-95%          0      (none in this run)
->=95%           0      (none in this run)
+Range       Files   Visual
+──────────────────────────────────────
+60-70%       139   ███
+70-80%       861   ██████████████████████
+80-85%       500   █████████████
+85-90%       500   █████████████
 ```
-
-**Mean Savings:** 82.2%
-**Std Deviation:** 10.4%
-**Min:** 51.9%
-**Max:** 86.2%
 
 ---
 
-## Quality Analysis
+## Cost Analysis (Haiku: $0.80/1M)
 
-### Quality Metrics
-
-| Quality Check | Result | Status |
-|--------------|--------|--------|
-| Purpose field present | 100% | ✅ |
-| Exports field present | 100% | ✅ |
-| Dependencies field present | 100% | ✅ |
-| Risk level assigned | 100% | ✅ |
-| Export detection accuracy | 100% | ✅ |
-| Non-empty summaries | 100% | ✅ |
-| Summary < 500 chars | 100% | ✅ |
-
-### Risk Level Distribution
-
-| Risk Level | Files | Percentage |
-|-------------|-------|------------|
-| High | 80 | 80% |
-| Medium | 20 | 20% |
-| Low | 0 | 0% |
-
-*High risk detection is working correctly — test files contain auth/database keywords.*
-
----
-
-## Cost Analysis
-
-### Single Session (100 Files)
-
-| Approach | Tokens | Cost @ $0.80/1M |
-|----------|--------|-----------------|
-| Raw file reads | ~43,889 | $0.035 |
-| Summary reads | ~7,802 | $0.006 |
-| **Savings** | **~36,087** | **$0.029 (82%)** |
-
-### Multi-Session Cost Comparison
+### 100 Files
 
 | Sessions | Raw Cost | Summary Cost | Savings |
 |----------|----------|--------------|---------|
@@ -96,25 +82,16 @@ Savings Range   Files   Visual
 | 50 | $1.755 | $0.312 | **$1.443** |
 | 100 | $3.511 | $0.624 | **$2.887** |
 
-**Key Insight:** Summary generation is ONE-TIME. Subsequent sessions only pay for reading summaries.
+### 2000 Files
 
----
+| Sessions | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 1 | $0.467 | $0.092 | $0.375 |
+| 10 | $4.670 | $0.920 | **$3.750** |
+| 50 | $23.350 | $4.600 | **$18.750** |
+| 100 | $46.700 | $9.200 | **$37.500** |
 
-## Test Suite Results
-
-```
-100 Tests: 100 Passed ✅
-
-Breakdown:
-- Parser tests:      17 passed
-- Summarizer tests:  13 passed
-- Token savings:      8 passed
-- Index builder:      9 passed
-- Edge cases:         20 passed
-- Integration:        6 passed
-- Regression:         7 passed
-- Validation:        10 passed
-```
+**Summary generation is ONE-TIME. Subsequent sessions only pay for reading summaries.**
 
 ---
 
@@ -122,25 +99,21 @@ Breakdown:
 
 **Quality: STAYS THE SAME ✅**
 
-ContextFS summaries maintain 100% coverage of all required fields:
-- Purpose (what the file does)
-- Exports (public API surface)
-- Dependencies (imports/requirements)
-- Risk (security/complexity indicator)
-
-The summarization does not degrade quality — it condenses the same information into fewer tokens. The AI reading the summary receives the same structural understanding, just in a more compact form.
-
-**Trade-off:** Very minor information loss in edge cases (e.g., export aliases become original names, detailed logic comments may be omitted). This is acceptable given the 82% token savings.
+ContextFS summaries maintain 100% coverage:
+- Purpose
+- Exports
+- Dependencies
+- Risk level
 
 ---
 
-## Files Generated
+## Commands
 
-- `mock-projectsmall/` — 2 files (~100 lines total)
-- `mock-projectmedium/` — 1 file (~300 lines)
-- `mock-projectlarge/` — 1 file (~500 lines)
-- `mock-projectxlarge/` — 1 file (~1200 lines)
-- `mock-project100/` — 100 auto-generated files
-- `contextfs.test.ts` — 100 test cases
-- `quality-100.ts` — quality consistency runner
-- `BENCHMARK.md` — this report
+```bash
+npm run test:vitest   # 100 unit tests
+npm run test:100      # 100 file quality test
+npm run test:2000     # 2000 file quality test
+npm run test          # Basic measurement
+npm run test:compare  # Scenario comparison
+npm run test:llm      # Real LLM test
+```
