@@ -12,7 +12,9 @@
     "prepublish": "npm run build",
     "test": "npx tsx test/run-tests.ts",
     "test:compare": "npx tsx test/comparison-test.ts",
-    "test:llm": "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY npx tsx test/llm-token-test.ts"
+    "test:llm": "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY npx tsx test/llm-token-test.ts",
+    "test:100": "npx tsx test/quality-100.ts",
+    "generate:100": "npx tsx test/generate-100.ts"
   },
   "keywords": [
     "ai",

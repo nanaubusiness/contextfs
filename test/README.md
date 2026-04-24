@@ -2,81 +2,100 @@
 
 This directory contains tests that demonstrate ContextFS token savings.
 
+## Quick Start
+
+```bash
+npm run test          # Basic token measurement
+npm run test:100      # 100 file quality consistency test
+npm run test:compare   # Realistic scenario comparison
+npm run test:llm      # Real LLM API test (needs API key)
+npm run generate:100  # Regenerate 100 test files
+```
+
 ## Test Files
 
 ### Mock Projects
-- `mock-projectsmall/` - 2 files, ~50 lines each
-- `mock-projectmedium/` - 1 file, ~300 lines
-- `mock-projectlarge/` - 1 file, ~500 lines
-- `mock-projectxlarge/` - 1 file, ~1200 lines
+| Directory | Files | Description |
+|-----------|-------|-------------|
+| `mock-projectsmall/` | 2 | Tiny files (~50 lines each) |
+| `mock-projectmedium/` | 1 | Medium file (~185 lines) |
+| `mock-projectlarge/` | 1 | Large file (~274 lines) |
+| `mock-projectxlarge/` | 1 | XL file (~590 lines) |
+| `mock-project100/` | 100 | Auto-generated files for quality testing |
 
 ### Test Scripts
 
 #### `run-tests.ts` - Basic Token Measurement
 Measures raw file sizes vs summary sizes and estimates token savings.
-
 ```bash
 npm run test
 ```
 
-Output:
-- Token counts for raw files vs summaries
-- Percentage savings per file and project
-- Cost estimation at Claude API pricing
+#### `quality-100.ts` - 100 File Quality Test
+Tests summary quality consistency across 100 files.
+```bash
+npm run test:100
+```
+**Results (100 files):**
+- 100% Purpose field coverage
+- 100% Risk field coverage
+- 100% Export detection accuracy
+- 82% average token savings
+- Std deviation: 10.4% (consistent quality)
 
-#### `comparison-test.ts` - Realistic Scenario Comparison
-Simulates real AI coding tool usage patterns:
-- Quick lookups (2 files)
-- Feature implementation (5 files)
-- Code review (10 files)
-- Refactoring (10 files, multiple passes)
-
+#### `comparison-test.ts` - Realistic Scenarios
+Simulates real AI coding tool usage patterns.
 ```bash
 npm run test:compare
 ```
 
-Output:
-- Per-session costs for raw vs summary approach
-- Cumulative savings across scenarios
-- Amortized savings over multiple sessions
-
 #### `llm-token-test.ts` - Real LLM Token Test
-Uses the actual Anthropic API to measure real token usage.
-**Requires `ANTHROPIC_API_KEY` environment variable.**
-
+Uses actual Anthropic API. Requires `ANTHROPIC_API_KEY`.
 ```bash
 npm run test:llm
-# or
-ANTHROPIC_API_KEY=sk-ant-... npm run test:llm
 ```
 
-Output:
-- Real input/output token counts from API
-- Actual dollar costs
-- Token savings percentages
+#### `generate-100.ts` - Regenerate Test Files
+Creates 100 new mock source files.
+```bash
+npm run generate:100
+```
 
 ## Expected Results
 
-Typical savings per file:
-| File Size | Raw Tokens | Summary Tokens | Savings |
-|-----------|-----------|----------------|---------|
-| Small (~50 lines) | ~200 | ~50 | ~75% |
-| Medium (~300 lines) | ~1,200 | ~150 | ~88% |
-| Large (~500 lines) | ~2,000 | ~200 | ~90% |
-| XL (~1200 lines) | ~4,800 | ~250 | ~95% |
+### Small Files (~50 lines)
+| Metric | Value |
+|--------|-------|
+| Raw tokens | ~200 |
+| Summary tokens | ~50 |
+| Savings | ~75% |
 
-## How It Works
+### Large Files (~500 lines)
+| Metric | Value |
+|--------|-------|
+| Raw tokens | ~2,000 |
+| Summary tokens | ~200 |
+| Savings | ~90% |
 
-1. **Mock summarizer** creates summaries based on heuristics (exports, imports, risk level)
-2. **LLM summarizer** uses Claude Haiku to generate richer summaries
-3. **Token estimation** uses 4 chars/token (typical for code)
-4. **Real API** returns actual token counts from response metadata
+### 100 File Quality Test
+| Metric | Value |
+|--------|-------|
+| Files tested | 100 |
+| Average savings | 82% |
+| Min savings | 52% |
+| Max savings | 86% |
+| Std deviation | 10.4% |
+| Purpose coverage | 100% |
+| Risk coverage | 100% |
 
-## Adding Test Files
+## Cost Savings
 
-Create new mock source files in the appropriate `mock-project*/` directory:
-- TypeScript files (`.ts`, `.tsx`)
-- JavaScript files (`.js`, `.jsx`)
-- Python files (`.py`)
+At Haiku pricing ($0.80/M input tokens):
 
-The scanner automatically picks them up when you run tests.
+| Scenario | Raw Cost | Summary Cost | Savings |
+|----------|----------|--------------|---------|
+| 100 files, 1 session | $0.035 | $0.006 | 83% |
+| 100 files, 10 sessions | $0.35 | $0.06 | 83% |
+| 100 files, 100 sessions | $3.51 | $0.62 | 82% |
+
+**Summary generation is one-time. Subsequent sessions only pay for reading summaries.**
