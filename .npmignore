@@ -1,5 +1,4 @@
 test/
 *.summary
-mock-project2000-real/
 benchmark_results/
 contextfs.tar.gz

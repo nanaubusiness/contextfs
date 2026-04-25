@@ -2,49 +2,39 @@
 
 Real LLM tests using MiniMax API with production code files.
 
-## Quick Start
+## Quick Demo (30 seconds)
+
+Want to see it work? Run the demo with 5 files:
 
 ```bash
-npm run test:llm     # Real LLM test (requires ANTHROPIC_API_KEY)
-npm run test:vitest  # 100 unit tests
+ANTHROPIC_API_KEY=sk-... npx tsx test/demo.ts
 ```
 
-## Test Projects
+This shows original file → summary for 5 files and prints token savings.
 
-| Directory | Files | Description |
-|-----------|-------|-------------|
-| `mock-project100/` | 100 | Real production code files (auth, payments, orders) |
-| `mock-project2000-real/` | 2,000 | Full production codebase (auth, payments, orders, notifications, analytics, inventory) |
+## Full Test (1,995 files)
 
-## Test Scripts
-
-### `llm-only-test.ts` - Real LLM Test (100 files)
-Tests token savings and quality with MiniMax Haiku API.
-```bash
-npm run test:llm
-```
-
-### `llm-token-test.ts` - Real LLM Test (sampled)
-Samples files across multiple projects with real LLM calls.
-```bash
-ANTHROPIC_API_KEY=sk-... npm run test:llm
-```
-
-### `quality-2000.ts` - 2,000 File Quality Test
-Tests summary quality across full 2,000 file production codebase.
 ```bash
 ANTHROPIC_API_KEY=sk-... npx tsx test/quality-2000.ts
 ```
 
-### `contextfs.test.ts` - Unit Tests
-100 Vitest unit tests for parsing, hashing, and context map building.
+Features:
+- Shows original + summary for every file
+- Retry logic with exponential backoff for API errors
+- Progress tracking every 10 files
+
+## Generate Test Files
+
+If you need to regenerate the 1,995 mock files:
+
 ```bash
-npm run test:vitest
+npx tsx test/generate-2000.ts
 ```
 
-## Results
+## Test Results
 
-### Real LLM Test (MiniMax Haiku, Opus 4.7 pricing)
-- **Token savings:** 76.1%
+### Real LLM Test (MiniMax, Opus 4.7 pricing)
+- **Token savings:** 80.3%
 - **Quality:** 100% of summaries answer all questions
-- **2,000 files:** $9.73 summary cost vs $40.82 raw cost
+- **Partial run:** 69/1995 files completed (MiniMax API outage)
+- **Full results:** `test/PARTIAL_RESULTS_69files.txt`

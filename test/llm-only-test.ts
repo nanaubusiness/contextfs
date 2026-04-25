@@ -32,7 +32,7 @@ function canAnswerFromSummary(summary: string, parsed: any): { sufficient: boole
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║           ContextFS - REAL LLM TEST (100 files, MiniMax Haiku)        ║");
+  console.log("║           ContextFS - REAL LLM TEST (MiniMax)              ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -41,7 +41,7 @@ async function main() {
     process.exit(1);
   }
 
-  const projectPath = path.join(__dirname, "mock-project100");
+  const projectPath = path.join(__dirname, "..", "src");
   const files = await scanFiles(projectPath);
   const summarizer = await createLLMSummarizer(apiKey);
 
@@ -73,8 +73,8 @@ async function main() {
   }
 
   const savings = ((totalRawTokens - totalSummaryTokens) / totalRawTokens * 100);
-  const rawCost = (totalRawTokens / 1_000_000) * 15;
-  const summaryCost = (totalSummaryTokens / 1_000_000) * 15;
+  const rawCost = (totalRawTokens / 1_000_000) * 5;
+  const summaryCost = (totalSummaryTokens / 1_000_000) * 5;
   const qualityPct = (qualityPass / files.length * 100);
 
   console.log("\n╔" + "═".repeat(78) + "╗");
@@ -88,7 +88,7 @@ async function main() {
   console.log("║    Summary tokens:     ~" + totalSummaryTokens.toLocaleString());
   console.log("║    Token savings:     " + savings.toFixed(1) + "%");
   console.log("║");
-  console.log("║  COST (Opus 4.7: $15/1M input)");
+  console.log("║  COST (Opus 4.7: $5/1M input)");
   console.log("║    Raw file reads:      $" + rawCost.toFixed(4));
   console.log("║    Summary reads:      $" + summaryCost.toFixed(4));
   console.log("║    Savings:           $" + (rawCost - summaryCost).toFixed(4) + " (" + savings.toFixed(1) + "%)");
