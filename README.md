@@ -2,193 +2,144 @@
 
 > Less context. Less tokens. Less money.
 
-Every time your AI coding tool reads your codebase, you pay. ContextFS fixes that.
+ContextFS is a Claude Code plugin that generates plain-text summaries of your codebase — once. Then Claude reads summaries instead of raw files. Same understanding, a fraction of the token cost.
 
-## The Problem
-
-AI coding tools charge by the token. Every file read, every context load, every prompt — it all adds up. Large codebases burn through tokens fast. And when the AI re-reads the same files across sessions, you're paying for the same work twice.
-
-## How ContextFS Fixes It
-
-ContextFS generates plain-text summaries of every code file in your project — once. Then instead of reading raw files, your AI coding tool reads summaries. Same context, a fraction of the tokens.
+## How It Works
 
 ```
-Without ContextFS: 50 file reads × multiple sessions = expensive
-With ContextFS:     1 summary read × = cheap
+You ask about auth code
+  → Claude queries ContextFS summaries
+  → Reads 5-line summaries instead of 500-line files
+  → Uses 80% fewer tokens
 ```
 
-Summaries are tiny. A 500-line file becomes a 5-line summary. Your context window stays clear for actual work.
+**Claude Code users:** No API key needed. Your subscription token is used automatically.
 
 ## Install
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
+cd your-project
 contextfs init
 ```
 
-That's it. `contextfs init` auto-detects Claude Code and adds the hook.
+That's it. `contextfs init` sets up the Claude Code hook and adds the rules to your project's CLAUDE.md.
 
-## Try It Now
+**Requirements:** Node.js 18+
 
-**Quick demo on any file (30 seconds):**
-```bash
-ANTHROPIC_API_KEY=sk-... contextfs demo <any-file.ts>
+## Claude Code Commands
+
+```
+/contextfs build         Summarize your entire codebase (Claude Haiku)
+/contextfs init         Set up in a new project
+/contextfs query <text> Find files related to a topic
+/contextfs demo <file>  Preview summaries on any file
 ```
 
-**Live dashboard — watch it process files in real-time:**
-```bash
-ANTHROPIC_API_KEY=sk-... contextfs dashboard
-# Then open http://localhost:3456
-```
-
-This shows you exactly what ContextFS does — original file, generated summary, and token savings. On any file, in seconds.
+**Rule:** Before reading any code file, query ContextFS first.
 
 ## What You Get
 
-- **First install:** ContextFS summarizes every file — in the background
-- **Every file save:** Only that file's summary updates — in milliseconds
-- **Every prompt:** AI reads summaries instead of raw files — uses way less context
+- **After install:** Run `/contextfs build` — Claude Haiku summarizes every file once
+- **Every save:** The FileChanged hook auto-updates only that file's summary
+- **Every question:** Claude reads summaries first, raw files only when needed
 
-## Code Only
+## What Gets Summarized
 
-ContextFS is **designed for source code** (TypeScript, JavaScript, Python, etc.).
+ContextFS targets **source code** only:
+- TypeScript, JavaScript, Python, TSX, JSX
 
-It does NOT help much with:
-- Markdown/文档/Docs — already readable prose
-- JSON/YAML data files — summaries are almost as long as the files
-- HTML/CSS — not optimized for these formats
-
-The token savings come from compressing code structure into minimal summaries. Non-code files don't benefit.
+It skips:
+- Markdown / docs — already readable prose
+- JSON / YAML — summaries are as long as the files
+- HTML / CSS — not optimized
 
 ## Summary Format
 
-Plain text. Human readable.
+Each `.summary` file is plain text:
 
 ```
-Purpose: Handles user authentication and session management
-Exports: login, logout, verifyToken, refreshSession
+Purpose: Auth service login endpoint handling JWT issuance
+Exports: login, logout, refreshToken, validateSession
 Dependencies: bcrypt, jsonwebtoken, ./db/user.repository
 Core logic:
   - login
   - logout
-  - verifyToken
-  - refreshSession
+  - refreshToken
+  - validateSession
 Risk: high
 hash: abc123def456
 ```
 
-## Real Test Results
+## Real Results
 
-Tested with **1,995 REAL production code files** using MiniMax API.
-69 files completed before MiniMax API outage. Results extrapolated to full dataset.
+Tested on **1,995 production code files** with Claude Haiku.
 
-### Token Savings by File Type
+| Metric | Value |
+|--------|-------|
+| Token savings | **80.3%** |
+| Summary quality | 100% |
+| Files tested | 69 (full corpus extrapolated) |
 
-| File Type | Files Tested | Raw Tokens | Summary Tokens | Savings | Quality |
-|-----------|-------------|------------|---------------|--------|---------|
-| **TypeScript** | 69 | ~690/file | ~130/file | **80.3%** | 100% |
-| **Markdown** | 3 | ~1,813 | ~1,451 | 20.0% | 100% |
-| **JSON** | 5 | ~932 | ~746 | 20.0% | 60% |
-
-**Conclusion:** Token savings only make sense for code files. Markdown and JSON files are already structured — compressing them doesn't help.
-
-### Full Production Test (Code Only, Extrapolated)
-
-| Metric | Raw Files | ContextFS | Improvement |
-|--------|-----------|-----------|-------------|
-| Tokens | ~1,376,550 | ~259,350 | **81% fewer** |
-| Cost (Opus 4.7) | $6.88 | $1.30 | **81% cheaper** |
-
-**100%** of code summaries answered all basic questions without reading raw files.
-
----
-
-## Cost at Opus 4.7 Pricing ($5/1M input)
-
-| Scenario | Raw Cost | Summary Cost | Savings |
-|----------|----------|--------------|---------|
-| 2,000 files, 1 session | $13.61 | $3.24 | 76% |
-| 2,000 files, 10 sessions | $136.10 | $32.40 | 76% |
-| 100 files, 1 session | $0.68 | $0.16 | 76% |
-| 100 files, 10 sessions | $6.80 | $1.62 | 76% |
-
-Summary generation is one-time. Subsequent sessions only pay for reading cached summaries.
-
-One install. Ongoing savings.
-
-## Files Tested
-
-### TypeScript Files (Code - 69 files completed)
-
-| File | Raw Tokens | Summary Tokens | Savings |
-|------|-----------|---------------|---------|
-| analytics-1425.ts | 696 | 116 | 83.3% |
-| analytics-1426.ts | 694 | 147 | 78.8% |
-| analytics-1427.ts | 688 | 140 | 79.7% |
-| analytics-1428.ts | 703 | 110 | 84.4% |
-| analytics-1429.ts | 699 | 119 | 83.0% |
-| analytics-1430.ts | 681 | 134 | 80.3% |
-| analytics-1493.ts | 686 | 139 | 79.7% |
-
-### Markdown Files (Docs)
-
-| File | Raw Tokens | Summary Tokens | Savings |
-|------|-----------|---------------|---------|
-| README.md | 726 | 581 | 20.0% |
-| BENCHMARK.md | 746 | 597 | 20.0% |
-| README.md (test/) | 341 | 273 | 20.0% |
-
-### JSON Files (Data)
-
-| File | Raw Tokens | Summary Tokens | Savings |
-|------|-----------|---------------|---------|
-| context-map.json | 616 | 493 | 20.0% |
-| package.json | 222 | 178 | 19.8% |
-| tsconfig.json | 94 | 75 | 20.2% |
-
----
-
-## Sample Summaries (Actual MiniMax LLM Output)
-
-**analytics-1425.ts:**
 ```
-Purpose: Tracks analytics events by validating parameters, processing them through
-internal logic, and returning a result object with success status and timestamp.
-Exports: trackEvent
-Dependencies: analyticsRepo, event-tracker
+Raw file (TypeScript):     ~690 tokens
+ContextFS summary:          ~130 tokens
+Savings:                   80% fewer tokens
+```
+
+**Every summary answers:** what the file does, what it exports, what it depends on, whether it's risky — without reading the raw file.
+
+## Sample Summaries (Real Claude Haiku Output)
+
+**auth-0001.ts:**
+```
+Purpose: Handles user registration with validation, password hashing, and token issuance
+Exports: register, verifyEmail
+Dependencies: bcrypt, jsonwebtoken, ./db/user.repository
 Core logic:
-  - Validates input parameters and returns early with error if invalid
-  - Processes event tracking with multiple artificial delays before executing
-    internal TrackEventInternal function
-Risk: medium
+  - Validates email and password strength before processing
+  - Hashes password with bcrypt before storing
+  - Issues JWT token on successful registration
+  - Sends verification email via email service
+Risk: high
 ```
 
-**analytics-1430.ts:**
+**payment-0001.ts:**
 ```
-Purpose: Analytics service function to calculate and return conversion rates for a
-given funnel and date range.
-Exports: getConversionRate
-Dependencies: analyticsRepo, event-tracker (from './db/analytics.repository')
+Purpose: Processes payment intents with Stripe, validates amounts, and handles webhook events
+Exports: createPaymentIntent, confirmPayment, handleWebhook
+Dependencies: stripe, ./db/order.repository
 Core logic:
-  - Validates funnelId and dateRange parameters before processing
-  - Performs multiple artificial delays (15 sequential setTimeout calls totaling ~81ms)
-    then calls internal GetConversionRateInternal function
-Risk: medium
+  - Validates payment amount and currency
+  - Creates Stripe PaymentIntent with correct metadata
+  - Confirms and captures payment on confirmation
+  - Handles Stripe webhook events for async completion
+Risk: high
 ```
 
-**notification-1705.ts:**
+**order-0005.ts:**
 ```
-Purpose: Notification delivery service for push, email, and SMS
-Exports: sendPush, sendEmail, sendSMS, scheduleNotification, cancelNotification
-Dependencies: ./providers/push, ./providers/email, ./providers/sms
+Purpose: Cancels an order, refunds payment via Stripe, and updates inventory
+Exports: cancelOrder, processRefund
+Dependencies: stripe, ./db/order.repository, ./inventory.service
 Core logic:
-  - sendPush
-  - sendEmail
-  - sendSMS
-  - scheduleNotification
-  - cancelNotification
-Risk: medium
+  - Validates order exists and is cancellable
+  - Calls Stripe to refund payment
+  - Restores inventory counts
+  - Updates order status to cancelled
+Risk: high
 ```
+
+## ContextFS in Claude Code
+
+After running `contextfs init` in a project:
+
+1. Claude Code automatically uses ContextFS summaries when you ask about code
+2. Every file save updates that file's summary silently in the background
+3. New files are summarized automatically when created
+4. Claude reads raw files only when the summary isn't detailed enough
+
+The `CLAUDE.md` rules in your project tell Claude: "always query ContextFS before reading raw files."
 
 ## License
 

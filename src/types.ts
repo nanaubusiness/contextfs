@@ -1,8 +1,6 @@
 export interface FileSummaryEntry {
   summary_path: string;
   purpose: string;
-  exports: string[];
-  dependencies: string[];
 }
 
 export interface ContextMap {

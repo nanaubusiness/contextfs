@@ -6,14 +6,6 @@ import { createLLMSummarizer } from "../summarizer/index.js";
 const CHARS_PER_TOKEN = 4;
 
 export async function runDemo(filePath: string): Promise<void> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    console.error("\n❌ ERROR: ANTHROPIC_API_KEY not set");
-    console.error("\nUsage: ANTHROPIC_API_KEY=sk-... contextfs demo <file>");
-    console.error("\nGet your API key from: https://console.minimax.io\n");
-    process.exit(1);
-  }
-
   const absolutePath = path.resolve(filePath);
   const content = await fs.readFile(absolutePath, "utf-8");
   const parsed = await parseFile(absolutePath);
@@ -33,10 +25,19 @@ export async function runDemo(filePath: string): Promise<void> {
   console.log(content);
 
   console.log("\n" + "─".repeat(80));
-  console.log("  SUMMARIZING WITH MINIMAX...");
+  console.log("  SUMMARIZING...");
   console.log("─".repeat(80) + "\n");
 
-  const summarizer = await createLLMSummarizer(apiKey);
+  let summarizer;
+  try {
+    summarizer = await createLLMSummarizer();
+  } catch (e: any) {
+    console.error("\n❌ ERROR: " + e.message);
+    console.error("\nTo fix, set up a free local model:");
+    console.error("  brew install ollama && ollama pull qwen2.5:3b\n");
+    process.exit(1);
+  }
+
   const summary = await summarizer.summarize(parsed);
   const summaryTokens = Math.ceil(summary.length / CHARS_PER_TOKEN);
   const savings = ((rawTokens - summaryTokens) / rawTokens * 100).toFixed(1);
@@ -50,11 +51,10 @@ export async function runDemo(filePath: string): Promise<void> {
   console.log("  RESULT");
   console.log("═".repeat(80));
   console.log(`
-  Raw tokens:        ~${rawTokens}
-  Summary tokens:    ~${summaryTokens}
-  Token savings:     ${savings}%
-  Cost without:      $${(rawTokens / 1_000_000 * 5).toFixed(4)}
-  Cost with summary: $${(summaryTokens / 1_000_000 * 5).toFixed(4)}
+  Provider:         ${summarizer.provider} / ${summarizer.model}
+  Raw tokens:       ~${rawTokens}
+  Summary tokens:   ~${summaryTokens}
+  Token savings:    ${savings}%
   `);
 
   console.log("  The AI can understand this file from the summary alone.");

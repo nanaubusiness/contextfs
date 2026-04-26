@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as crypto from "crypto";
 import { scanFiles, parseFile } from "../parser/index.js";
-import { createMockSummarizer, createLLMSummarizer } from "../summarizer/index.js";
+import { createMockSummarizer, createLLMSummarizer, type Summarizer } from "../summarizer/index.js";
 import { buildContextMap, saveContextMap } from "../index-builder.js";
 
 function computeHash(content: string): string {
@@ -27,7 +27,7 @@ async function loadExistingSummary(
 
 async function processFile(
   filePath: string,
-  summarizer: Awaited<ReturnType<typeof createMockSummarizer>>,
+  summarizer: Summarizer,
   skipHashCheck: boolean,
 ): Promise<{ path: string; content: string; changed: boolean }> {
   const summaryPath = `${filePath}.summary`;
@@ -53,12 +53,15 @@ async function processFile(
 async function processTargetFile(
   filePath: string,
   rootDir: string,
-  summarizer: Awaited<ReturnType<typeof createMockSummarizer>>,
+  summarizer: Summarizer,
 ): Promise<void> {
-  const result = await processFile(filePath, summarizer, false);
+  // Resolve paths relative to cwd (not rootDir) so --target works intuitively
+  const absolutePath = path.isAbsolute(filePath) ? filePath : path.resolve(filePath);
+  const result = await processFile(absolutePath, summarizer, false);
   if (result.changed) {
-    console.error(`[contextfs] Updated: ${path.relative(rootDir, filePath)}`);
-    const contextMap = await buildContextMap(rootDir, new Map([[result.path, result.content]]));
+    const relativePath = path.relative(rootDir, absolutePath);
+    console.error(`[contextfs] Updated: ${relativePath}`);
+    const contextMap = await buildContextMap(rootDir, new Map([[absolutePath, result.content]]));
     await saveContextMap(rootDir, contextMap);
   }
 }
@@ -74,7 +77,7 @@ export async function runBuild(args: {
 
   const summarizer = useMockLLM
     ? createMockSummarizer()
-    : await createLLMSummarizer(anthropicApiKey ?? process.env.ANTHROPIC_API_KEY ?? "");
+    : await createLLMSummarizer();
 
   if (targetFile) {
     await processTargetFile(targetFile, rootDir, summarizer);
