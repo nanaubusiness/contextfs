@@ -19,24 +19,27 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# ── Extract pre-built dist (committed as contextfs.tar.gz) ──────────────────────
-# dist/ is not in git — extract from the committed tarball
+# ── Extract pre-built dist (committed as contextfs.tar.gz) ─────────────────────
 if [ ! -f "dist/index.js" ]; then
     if [ -f "contextfs.tar.gz" ]; then
         echo "Extracting pre-built files..."
         tar -xzf contextfs.tar.gz
     else
         echo "Error: dist/index.js not found and contextfs.tar.gz missing."
-        echo "Try: npm install && npm run build"
         exit 1
     fi
 fi
 
-# ── Install binary ─────────────────────────────────────────────────────────────
-cp "${INSTALL_DIR}/dist/index.js" "${BIN_DIR}/contextfs"
-chmod +x "${BIN_DIR}/contextfs"
+# ── Install binary as shell wrapper (avoids shebang issues across platforms) ────
+WRAPPER="${BIN_DIR}/contextfs"
+cat > "$WRAPPER" << 'WRAPPER_EOF'
+#!/bin/sh
+DIR="$(cd "$(dirname "$0")" && pwd)/../contextfs"
+exec node "$DIR/dist/index.js" "$@"
+WRAPPER_EOF
+chmod +x "$WRAPPER"
 
-# ── Install Claude Code skill ─────────────────────────────────────────────────
+# ── Install Claude Code skill ──────────────────────────────────────────────────
 SKILL_DIR="${HOME}/.claude/skills/contextfs"
 mkdir -p "$SKILL_DIR"
 if [ -f "${INSTALL_DIR}/.claude/skills/contextfs/SKILL.md" ]; then

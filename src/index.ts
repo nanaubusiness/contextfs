@@ -37,9 +37,9 @@ function printUsage() {
 
 Usage:
   contextfs init                   Connect ContextFS to Claude Code
-  contextfs build                 Build all summaries (requires ANTHROPIC_API_KEY)
+  contextfs build                 Build all summaries (Claude Code subscription auto-detected)
   contextfs build --target <file> Update one file
-  contextfs demo <file>           Try it on any file (requires ANTHROPIC_API_KEY)
+  contextfs demo <file>           Try it on any single file
   contextfs query "<text>"        Search summaries
 `);
 }
