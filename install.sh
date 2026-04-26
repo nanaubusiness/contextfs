@@ -1,42 +1,33 @@
 #!/bin/bash
 set -e
 
-echo "Installing ContextFS..."
-
-REPO_URL="https://github.com/nanaubusiness/contextfs.git"
 INSTALL_DIR="${HOME}/.local/contextfs"
 BIN_DIR="${HOME}/.local/bin"
+REPO_URL="https://github.com/nanaubusiness/contextfs.git"
 
 mkdir -p "$INSTALL_DIR"
 mkdir -p "$BIN_DIR"
 
-# ── Pre-built tarball (fastest path) ──────────────────────────────────────────
-if [ -f "${HOME}/.local/contextfs/contextfs.tar.gz" ]; then
-    echo "Using pre-built package..."
-    tar -xzf "${HOME}/.local/contextfs/contextfs.tar.gz" -C "$INSTALL_DIR" --strip-components=1 2>/dev/null || {
-        echo "Extracting pre-built package..."
-        tar -xzf "${HOME}/.local/contextfs/contextfs.tar.gz" -C "$INSTALL_DIR"
-    }
-
-# ── Git clone + build ─────────────────────────────────────────────────────────
+# ── Clone or update ─────────────────────────────────────────────────────────────
+if [ -d "${INSTALL_DIR}/.git" ]; then
+    echo "Updating ContextFS..."
+    cd "$INSTALL_DIR"
+    git pull origin main
 else
-    if [ -d "${INSTALL_DIR}/.git" ]; then
-        echo "Updating existing ContextFS..."
-        cd "$INSTALL_DIR"
-        git pull origin main
-    else
-        echo "Cloning ContextFS..."
-        git clone "$REPO_URL" "$INSTALL_DIR"
-        cd "$INSTALL_DIR"
-    fi
+    echo "Cloning ContextFS..."
+    git clone "$REPO_URL" "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+fi
 
-    if command -v npm &> /dev/null; then
-        echo "Building ContextFS..."
-        npm install
-        npm run build
+# ── Extract pre-built dist (committed as contextfs.tar.gz) ──────────────────────
+# dist/ is not in git — extract from the committed tarball
+if [ ! -f "dist/index.js" ]; then
+    if [ -f "contextfs.tar.gz" ]; then
+        echo "Extracting pre-built files..."
+        tar -xzf contextfs.tar.gz
     else
-        echo "Error: npm is required to build from source. Install Node.js 18+ first."
-        echo "Or download a pre-built release from: https://github.com/nanaubusiness/contextfs/releases"
+        echo "Error: dist/index.js not found and contextfs.tar.gz missing."
+        echo "Try: npm install && npm run build"
         exit 1
     fi
 fi
@@ -54,20 +45,15 @@ elif [ -f "${INSTALL_DIR}/SKILL.md" ]; then
     cp "${INSTALL_DIR}/SKILL.md" "$SKILL_DIR/SKILL.md"
 fi
 
-echo ""
 echo "ContextFS installed to ~/.local/bin/contextfs"
 
-# ── Claude Code hook setup ─────────────────────────────────────────────────────
+# ── Project setup ─────────────────────────────────────────────────────────────
 if [ -d "$(pwd)/.git" ] || [ -f "$(pwd)/package.json" ] || [ -f "$(pwd)/CLAUDE.md" ]; then
-    echo ""
     echo "Setting up Claude Code integration in $(pwd)..."
     contextfs init
 else
-    echo ""
-    echo "Next, go to your project directory and run:"
+    echo "Go to your project directory and run:"
     echo "  contextfs init"
-    echo ""
-    echo "This sets up the Claude Code hook and CLAUDE.md rules in your project."
 fi
 
 echo ""

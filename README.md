@@ -23,7 +23,7 @@ cd your-project
 contextfs init
 ```
 
-That's it. `contextfs init` sets up the Claude Code hook and adds the rules to your project's CLAUDE.md.
+The script clones the repo and extracts the pre-built binary — no npm or build step required.
 
 **Requirements:** Node.js 18+
 
