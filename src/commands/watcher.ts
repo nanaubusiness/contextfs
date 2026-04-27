@@ -2,7 +2,6 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import { spawn, ChildProcess } from "child_process";
-import * as proc from "process";
 
 type Editor = "claude-code" | "cursor" | "codex" | "vscode";
 
@@ -45,7 +44,7 @@ async function writeLauncherDaemon(projectDirs: string[], editor: Editor): Promi
   await fs.writeFile(watcherScriptPath, watcherScript, "utf-8");
   await fs.chmod(watcherScriptPath, 0o755);
 
-  if (proc.platform === "darwin") {
+  if (process.platform === "darwin") {
     // macOS: launchd
     const plistPath = path.join(home, "Library", "LaunchAgents", "com.contextfs.watcher.plist");
     const plistContent = LAUNCHD_PLIST.replace("{{WATCHER_SCRIPT}}", watcherScriptPath);
@@ -82,7 +81,7 @@ WantedBy=default.target
 
 function buildWatcherScript(projectDirs: string[]): string {
   const dirsArg = projectDirs.map(d => `"${d}"`).join(" ");
-  const isMac = proc.platform === "darwin";
+  const isMac = process.platform === "darwin";
   const CONTEXTFS_BIN = os.homedir() + "/.local/bin/contextfs";
   const HOME = os.homedir();
 
@@ -132,7 +131,7 @@ wait
 let watcherProcess: ChildProcess | null = null;
 
 async function startWatcherProcess(projectDirs: string[]): Promise<void> {
-  const isMac = proc.platform === "darwin";
+  const isMac = process.platform === "darwin";
   const watcherCmd = isMac ? "fswatch" : "inotifywait";
 
   // Check if watcher is available

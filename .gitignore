@@ -3,4 +3,4 @@ dist/
 *.summary
 context-map.json
 contextfs
-contextfs-*
+contextfs-1.0.0.tgz

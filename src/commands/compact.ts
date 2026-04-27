@@ -1,4 +1,5 @@
 import * as fs from "fs/promises";
+import * as fsSync from "fs";
 import * as path from "path";
 import * as os from "os";
 
@@ -124,7 +125,7 @@ function detectSessionFiles(): string[] {
   const files: string[] = [];
   for (const dir of candidates) {
     try {
-      const entries = require("fs").readdirSync(dir);
+      const entries = fsSync.readdirSync(dir);
       for (const entry of entries.slice(-5)) {
         files.push(path.join(dir, entry));
       }
