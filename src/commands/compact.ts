@@ -60,8 +60,8 @@ Provide a 3-4 sentence summary of what was accomplished.`;
 
   return {
     session_summary: sessionSummary,
-    decision_map: filesMentioned.reduce((acc, f) => {
-      acc[f] = { action: "referenced", reason: "discussed during session" };
+    decision_map: decisions.reduce((acc, d) => {
+      acc[d] = { action: "decided", reason: "agreed during session" };
       return acc;
     }, {} as Record<string, { action: string; reason: string }>),
     open_questions: questions.slice(0, 5),
@@ -83,7 +83,7 @@ function extractDecisions(text: string): string[] {
   const patterns = [
     /(?:decided|chose|opted|agreed|concluded|determined) [:@](.+)/gi,
     /(?:we'll|I'll|let's go with|going with) ([^.\n]+)/gi,
-    /(?:use|using|implement|build) ([^.\n]+?) (?:instead|rather|instead)/gi,
+    /(?:use|using|implement|build) ([^.\n]+?) (?:instead|rather)/gi,
   ];
   const results: string[] = [];
   for (const p of patterns) {

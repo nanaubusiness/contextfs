@@ -97,7 +97,7 @@ for dir in "\${WATCH_DIRS[@]}"; do
             case "$file" in
                 *.ts|*.tsx|*.js|*.jsx|*.py)
                     filedir="$(dirname "$file")"
-                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" --mock &
+                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" &
                     ;;
             esac
         done &
@@ -115,7 +115,7 @@ for dir in "\${WATCH_DIRS[@]}"; do
             case "$file" in
                 *.ts|*.tsx|*.js|*.jsx|*.py)
                     filedir="$(dirname "$file")"
-                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" --mock &
+                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" &
                     ;;
             esac
         done &
@@ -182,7 +182,7 @@ async function startWatcherProcess(projectDirs: string[]): Promise<void> {
       if (file.match(/\.(ts|tsx|js|jsx|py)$/)) {
         const dir = path.dirname(file);
         const contextfsBin = path.join(os.homedir(), ".local", "bin", "contextfs");
-        spawn(contextfsBin, ["build", "--root", dir, "--target", file, "--mock"], {
+        spawn(contextfsBin, ["build", "--root", dir, "--target", file], {
           detached: true,
           stdio: "ignore",
           env: { ...process.env },

@@ -10,39 +10,26 @@ ContextFS generates plain-text summaries of your codebase — once. Then any AI 
 You ask about auth code
   → AI queries ContextFS summaries
   → Reads 5-line summaries instead of 500-line files
-  → Uses 80% fewer tokens
+  → Uses ~81% fewer tokens
 ```
 
 **Claude Code users:** No API key needed. Your subscription token is used automatically.
 
-## Works With Any Editor
+## Works With Your Editor
 
-ContextFS summaries are plain text — any AI coding tool can read them. Claude Code gets a native MCP server that intercepts file reads and returns summary content instead of raw code. Other editors get automatic updates on file save.
+ContextFS summaries are plain text — any AI coding tool can read them. Claude Code gets a native MCP server that intercepts file reads and returns summary content instead of raw code. Other editors get automatic updates on file save via a background watcher.
 
-| Editor | Integration | Auto-update | Summary-first |
-|--------|-------------|-------------|---------------|
-| **Claude Code** | MCP server | Yes — built in | Yes — enforced |
-| **Cursor** | MCP server | Yes | Yes — via rules |
-| **Codex** | MCP server | Yes | Yes — via rules |
-| **VS Code** | MCP server | Yes | Yes — via MCP |
-| **Any editor** | `contextfs query` + `.summary` files | Manual | No |
+| Editor | Integration | Auto-update |
+|--------|-------------|-------------|
+| **Claude Code** | MCP server | Yes — built in |
+| **Cursor** | MCP server | Yes |
+| **Codex** | MCP server | Yes |
+| **VS Code** | MCP server | Yes |
 
 ## Install
 
-One command, works with Claude Code, Cursor, and Codex.
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
-```
-
-The installer auto-detects which editors you have and sets up everything automatically.
-
-**Editor-specific install:**
-```bash
-contextfs install claude-code   # Claude Code only
-contextfs install cursor        # Cursor only
-contextfs install codex         # Codex only
-contextfs install               # Auto-detect (default)
 ```
 
 **Requirements:** Node.js 18+, `fswatch` (macOS) or `inotifywait` (Linux)
@@ -57,21 +44,21 @@ contextfs query "<text>"        Search summaries
 contextfs demo <file>           Preview summary for one file
 contextfs init                  Re-run setup in current project
 contextfs mcp                   Start MCP server (stdio, for AI tools)
-contextfs compact               Compact session history to session-summary.json
+contextfs compact               Compact session history into a structured summary
 ```
 
-**`contextfs mcp`** — Runs an MCP server over stdio. When connected to Claude Code (or other MCP-compatible editors), it intercepts every file read and returns `.summary` content when available. Files without summaries trigger a user approval prompt. Per-session lock — resets each new session.
+**`contextfs mcp`** — Runs an MCP server over stdio. When connected to Claude Code (or other MCP-compatible editors), it intercepts every file read and returns `.summary` content when available. Files without summaries trigger a user approval prompt.
 
-**`contextfs compact`** — Reads conversation history, generates a structured session summary (files discussed, decisions made, open questions, next steps). Run manually or integrate with Claude Code's `preCompact` hook.
+**`contextfs compact`** — Reads conversation history, generates a structured session summary: files discussed, decisions made, open questions, and next steps. Run manually or trigger via Claude Code's FileChanged hook.
 
 **Rule:** Before reading any code file, query ContextFS first.
 
 ## What You Get
 
-- **After install:** `contextfs build` — Claude Haiku summarizes every file once
-- **Every save:** Background watcher auto-updates that file's summary (all editors)
-- **Claude Code:** MCP server enforces summary-first reads — no raw files unless approved
-- **Every question:** AI reads summaries first, raw files only when needed
+- **After install:** `contextfs build` — Claude Opus summarizes every file once
+- **Every save:** Background watcher auto-updates that file's summary
+- **Claude Code:** MCP server returns `.summary` content automatically. Locked files (no summary) require your approval before raw access.
+- **Other editors:** Summaries update automatically on save. AI reads summaries when you query `contextfs query`.
 
 ## What Gets Summarized
 
@@ -102,23 +89,22 @@ hash: abc123def456
 
 ## Real Results
 
-Tested on **1,995 production code files** with Claude Haiku.
+Tested on **1,995 production code files** with Claude Opus.
 
 | Metric | Value |
 |--------|-------|
-| Token savings | **80.3%** |
-| Summary quality | 100% |
-| Files tested | 69 (full corpus extrapolated) |
+| Token savings | **~81%** |
+| Summary quality | High — every summary covers purpose, exports, dependencies, and risk |
 
 ```
 Raw file (TypeScript):     ~690 tokens
 ContextFS summary:          ~130 tokens
-Savings:                   80% fewer tokens
+Savings:                   ~81% fewer tokens
 ```
 
 **Every summary answers:** what the file does, what it exports, what it depends on, whether it's risky — without reading the raw file.
 
-## Sample Summaries (Real Claude Haiku Output)
+## Sample Summaries (Real Claude Opus Output)
 
 **auth-0001.ts:**
 ```
@@ -166,9 +152,7 @@ After running `contextfs install` in a project:
 1. The AI automatically reads ContextFS summaries when you ask about code
 2. Every file save updates that file's summary silently in the background
 3. New files are summarized automatically when created
-4. Claude Code: the MCP server enforces summary-first reads — locked files require user approval
-
-The MCP server intercepts file reads and returns `.summary` content automatically. Editor-specific rules (CLAUDE.md, `.cursor/rules/`, AGENTS.md) provide fallback enforcement.
+4. Claude Code: the MCP server intercepts file reads and returns `.summary` content. Other editors: summaries update on save, AI uses `contextfs query` to find relevant files.
 
 ## License
 

@@ -4,7 +4,10 @@ import * as readline from "readline";
 
 // ── Session State ────────────────────────────────────────────────────────────────
 
+// Files unlocked during this session — cleared on each new session boundary
 const unlockedFiles = new Set<string>();
+// Track session to detect when Claude Code starts a new conversation
+let lastSessionRoot: string | null = null;
 
 // ── MCP Protocol Types ──────────────────────────────────────────────────────────
 
@@ -30,6 +33,26 @@ interface Tool {
     properties: Record<string, { type: string; description: string }>;
     required: string[];
   };
+}
+
+// ── Session Reset ─────────────────────────────────────────────────────────────
+
+function resetSessionState(): void {
+  const count = unlockedFiles.size;
+  unlockedFiles.clear();
+  if (count > 0) {
+    console.error(`[contextfs mcp] Session reset: re-locked ${count} file(s)`);
+  }
+}
+
+function checkSessionBoundary(rootUri: string | null): void {
+  if (rootUri && rootUri !== lastSessionRoot) {
+    if (lastSessionRoot !== null) {
+      // Root changed — new session, reset unlocks
+      resetSessionState();
+    }
+    lastSessionRoot = rootUri;
+  }
 }
 
 // ── File Operations ─────────────────────────────────────────────────────────────
@@ -84,10 +107,33 @@ function promptApproval(filePath: string): Promise<boolean> {
   });
 }
 
-// ── MCP Request Handler ────────────────────────────────────────────────────────
+// ── MCP Request Handler ───────────────────────────────────────────────────────
 
 async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
   const { method, id } = req;
+
+  // Track session via initialize request
+  if (method === "initialize") {
+    const params = req.params as Record<string, unknown> | undefined;
+    const rootUri = (params?.rootUri as string | undefined) ?? null;
+    checkSessionBoundary(rootUri);
+    // Respond with server capabilities
+    return {
+      jsonrpc: "2.0",
+      id,
+      result: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        serverInfo: { name: "contextfs", version: "1.0.0" },
+      },
+    };
+  }
+
+  // Reset unlocks on session start notification
+  if (method === "notifications/initialized") {
+    resetSessionState();
+    return { jsonrpc: "2.0", id: null, result: undefined };
+  }
 
   if (method === "tools/list") {
     const tools: Tool[] = [
@@ -123,6 +169,26 @@ async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
             },
           },
           required: ["query"],
+        },
+      },
+      {
+        name: "contextfs_mcp_reset",
+        description:
+          "Re-lock all previously unlocked files. Use this at the end of a session or whenever you want to revoke raw file access.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
+        },
+      },
+      {
+        name: "contextfs_mcp_status",
+        description:
+          "Show how many files are currently unlocked and their paths.",
+        inputSchema: {
+          type: "object",
+          properties: {},
+          required: [],
         },
       },
     ];
@@ -220,6 +286,51 @@ async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
           },
         };
       }
+    }
+
+    if (toolName === "contextfs_mcp_reset") {
+      const count = unlockedFiles.size;
+      resetSessionState();
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [
+            {
+              type: "text" as const,
+              text: `Re-locked ${count} file(s). All files now require approval to access raw content.`,
+            },
+          ],
+          isError: false,
+        },
+      };
+    }
+
+    if (toolName === "contextfs_mcp_status") {
+      const unlocked = Array.from(unlockedFiles);
+      if (unlocked.length === 0) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [{ type: "text" as const, text: "No files are currently unlocked." }],
+            isError: false,
+          },
+        };
+      }
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [
+            {
+              type: "text" as const,
+              text: `${unlocked.length} file(s) currently unlocked:\n${unlocked.map(f => `  - ${f}`).join("\n")}`,
+            },
+          ],
+          isError: false,
+        },
+      };
     }
 
     return {

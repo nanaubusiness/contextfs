@@ -49,7 +49,7 @@ export async function detectProvider(): Promise<string> {
     const settings = JSON.parse(content);
     if (settings.env?.ANTHROPIC_AUTH_TOKEN) {
       _resolvedApiKey = settings.env.ANTHROPIC_AUTH_TOKEN;
-      console.log("[contextfs] Using Claude Code subscription (Anthropic Haiku)");
+      console.log("[contextfs] Using Claude Code subscription (Claude Opus)");
       return "anthropic";
     }
   } catch {}

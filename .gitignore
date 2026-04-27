@@ -4,3 +4,5 @@ dist/
 context-map.json
 contextfs
 contextfs-*.tgz
+contextfs.tar.gz
+test/mock-project2000-real/

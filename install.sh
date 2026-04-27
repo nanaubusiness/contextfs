@@ -19,14 +19,15 @@ else
     cd "$INSTALL_DIR"
 fi
 
-# ── Extract pre-built dist (committed as contextfs.tar.gz) ─────────────────────
+# ── Extract pre-built dist (from tarball) or build from source ─────────────────
 if [ ! -f "dist/index.js" ]; then
     if [ -f "contextfs.tar.gz" ]; then
         echo "Extracting pre-built files..."
         tar -xzf contextfs.tar.gz
     else
-        echo "Error: dist/index.js not found and contextfs.tar.gz missing."
-        exit 1
+        echo "Building from source..."
+        npm install
+        npm run build
     fi
 fi
 
