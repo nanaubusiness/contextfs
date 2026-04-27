@@ -33,8 +33,8 @@ export async function runDemo(filePath: string): Promise<void> {
     summarizer = await createLLMSummarizer();
   } catch (e: any) {
     console.error("\n❌ ERROR: " + e.message);
-    console.error("\nTo fix, set up a free local model:");
-    console.error("  brew install ollama && ollama pull qwen2.5:3b\n");
+    console.error("\nTo fix, set your ANTHROPIC_API_KEY environment variable:");
+    console.error("  export ANTHROPIC_API_KEY=sk-ant-...\n");
     process.exit(1);
   }
 

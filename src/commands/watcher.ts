@@ -182,7 +182,7 @@ async function startWatcherProcess(projectDirs: string[]): Promise<void> {
       if (file.match(/\.(ts|tsx|js|jsx|py)$/)) {
         const dir = path.dirname(file);
         const contextfsBin = path.join(os.homedir(), ".local", "bin", "contextfs");
-        spawn(process.execPath, [contextfsBin, "build", "--root", dir, "--target", file, "--mock"], {
+        spawn(contextfsBin, ["build", "--root", dir, "--target", file, "--mock"], {
           detached: true,
           stdio: "ignore",
           env: { ...process.env },

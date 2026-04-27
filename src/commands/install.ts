@@ -2,7 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
 import * as readline from "readline";
-import { execSync, spawn } from "child_process";
+import { execFileSync, execSync, spawn } from "child_process";
 import { runInit } from "./init.js";
 import { setupWatcher } from "./watcher.js";
 
@@ -355,8 +355,9 @@ export async function detectEditors(): Promise<Editor[]> {
 
 function spotlightQuery(name: string, timeoutMs = 30000): string[] {
   try {
-    const output = execSync(
-      `mdfind kMDItemFSName == ${name}`,
+    const output = execFileSync(
+      "mdfind",
+      ["kMDItemFSName", "==", name],
       { timeout: timeoutMs, stdio: ["ignore", "pipe", "ignore"] }
     ).toString();
     return output.trim().split("\n").filter(Boolean);

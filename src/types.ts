@@ -20,5 +20,4 @@ export interface BuildOptions {
   rootDir: string;
   skipHashCheck: boolean;
   useMockLLM: boolean;
-  anthropicApiKey?: string;
 }

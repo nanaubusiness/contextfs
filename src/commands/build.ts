@@ -71,9 +71,8 @@ export async function runBuild(args: {
   skipHashCheck: boolean;
   useMockLLM: boolean;
   targetFile?: string;
-  anthropicApiKey?: string;
 }): Promise<void> {
-  const { rootDir, skipHashCheck, useMockLLM, targetFile, anthropicApiKey } = args;
+  const { rootDir, skipHashCheck, useMockLLM, targetFile } = args;
 
   const summarizer = useMockLLM
     ? createMockSummarizer()

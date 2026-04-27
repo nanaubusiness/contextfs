@@ -85,7 +85,6 @@ async function runBuildCommand(args: string[]) {
     skipHashCheck,
     useMockLLM,
     targetFile,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   });
 }
 

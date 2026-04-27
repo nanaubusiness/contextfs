@@ -16,15 +16,11 @@ async function setupHook(): Promise<void> {
   const settingsPath = path.join(homeDir, ".claude", "settings.json");
   const hookCommand = `contextfs build --root "$(pwd)" --target "$f"`;
 
-  const hookEntry = {
-    FileChanged: [{
-      hooks: [{
-        type: "command",
-        command: hookCommand,
-        async: true,
-        statusMessage: "Updating ContextFS summary"
-      }]
-    }]
+  const newHook = {
+    type: "command",
+    command: hookCommand,
+    async: true,
+    statusMessage: "Updating ContextFS summary"
   };
 
   try {
@@ -34,18 +30,19 @@ async function setupHook(): Promise<void> {
       settings = JSON.parse(content);
     }
 
-    if (settings.hooks?.FileChanged) {
-      const existing = settings.hooks.FileChanged[0]?.hooks?.[0]?.command || "";
-      if (existing.includes("contextfs")) {
-        console.log("ContextFS hook already configured");
-      } else {
-        settings.hooks.FileChanged = hookEntry.FileChanged;
-        await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
-        console.log("ContextFS hook installed");
-      }
+    if (!settings.hooks) settings.hooks = {};
+    if (!settings.hooks.FileChanged) settings.hooks.FileChanged = [{ hooks: [] }];
+
+    // Check all existing hooks for contextfs
+    const alreadyConfigured = settings.hooks.FileChanged.some((group: any) =>
+      group.hooks?.some((h: any) => h.command?.includes("contextfs"))
+    );
+
+    if (alreadyConfigured) {
+      console.log("ContextFS hook already configured");
     } else {
-      if (!settings.hooks) settings.hooks = {};
-      settings.hooks.FileChanged = hookEntry.FileChanged;
+      // Append to the first hook group (matches Claude Code's single-group structure)
+      settings.hooks.FileChanged[0].hooks.push(newHook);
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
       console.log("ContextFS hook installed");
     }
