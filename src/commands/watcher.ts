@@ -18,6 +18,11 @@ const LAUNCHD_PLIST = `<?xml version="1.0" encoding="UTF-8"?>
     <array>
         <string>{{WATCHER_SCRIPT}}</string>
     </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>{{HOME}}/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
@@ -78,7 +83,8 @@ WantedBy=default.target
 function buildWatcherScript(projectDirs: string[]): string {
   const dirsArg = projectDirs.map(d => `"${d}"`).join(" ");
   const isMac = proc.platform === "darwin";
-  const watcherCmd = isMac ? "fswatch" : "inotifywait";
+  const CONTEXTFS_BIN = os.homedir() + "/.local/bin/contextfs";
+  const HOME = os.homedir();
 
   if (isMac) {
     // fswatch: recursive, exclude summary/git/node_modules, print paths
@@ -88,12 +94,11 @@ EXCLUDE_PATTERN="--exclude=\\.(summary|git|node_modules|DS_Store)$"
 
 for dir in "\${WATCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        fswatch -r $EXCLUDE_PATTERN --format="%path" "$dir" | while read -r file; do
-            # Only process source files
+        fswatch -r $EXCLUDE_PATTERN --format="%path" "$dir" 2>/dev/null | while IFS= read -r file; do
             case "$file" in
                 *.ts|*.tsx|*.js|*.jsx|*.py)
-                    dir=$(dirname "$file")
-                    contextfs build --root "$dir" --target "$file" &
+                    filedir="$(dirname "$file")"
+                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" --mock &
                     ;;
             esac
         done &
@@ -107,11 +112,11 @@ wait
 WATCH_DIRS=(${dirsArg})
 for dir in "\${WATCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        inotifywait -rm -e modify,create -e exclude="(\\.summary$|\\.git/|node_modules/)" "$dir" | while read -r _ _ file; do
+        inotifywait -rm -e modify,create -e exclude="(\\.summary$|\\.git/|node_modules/)" "$dir" 2>/dev/null | while IFS= read -r _ _ file; do
             case "$file" in
                 *.ts|*.tsx|*.js|*.jsx|*.py)
-                    dir=$(dirname "$file")
-                    contextfs build --root "$dir" --target "$file" &
+                    filedir="$(dirname "$file")"
+                    "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" --mock &
                     ;;
             esac
         done &
@@ -177,9 +182,11 @@ async function startWatcherProcess(projectDirs: string[]): Promise<void> {
       // Only process source files
       if (file.match(/\.(ts|tsx|js|jsx|py)$/)) {
         const dir = path.dirname(file);
-        spawn("contextfs", ["build", "--root", dir, "--target", file], {
+        const contextfsBin = path.join(os.homedir(), ".local", "bin", "contextfs");
+        spawn(process.execPath, [contextfsBin, "build", "--root", dir, "--target", file, "--mock"], {
           detached: true,
           stdio: "ignore",
+          env: { ...process.env },
         });
       }
     }
@@ -198,7 +205,7 @@ async function startWatcherProcess(projectDirs: string[]): Promise<void> {
   // Unref so parent can exit
   watcherProc.unref();
   watcherProcess = watcherProc;
-  console.log(`  Background watcher started (pid ${proc.pid})`);
+  console.log(`  Background watcher started (pid ${watcherProc.pid})`);
 }
 
 // ── Main setup ─────────────────────────────────────────────────────────────────
