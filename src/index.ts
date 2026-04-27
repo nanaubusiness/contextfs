@@ -4,6 +4,7 @@ import { runBuild } from "./commands/build.js";
 import { runQuery } from "./commands/query.js";
 import { runInit } from "./commands/init.js";
 import { runDemo } from "./commands/demo.js";
+import { runInstall } from "./commands/install.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -23,6 +24,8 @@ async function main() {
     await runInitCommand(args.slice(1));
   } else if (command === "demo") {
     await runDemoCommand(args.slice(1));
+  } else if (command === "install") {
+    await runInstallCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
     printUsage();
   } else {
@@ -36,11 +39,15 @@ function printUsage() {
   console.log(`ContextFS
 
 Usage:
-  contextfs init                   Connect ContextFS to Claude Code
-  contextfs build                 Build all summaries (Claude Code subscription auto-detected)
+  contextfs install                Auto-detect editors and set up ContextFS
+  contextfs install claude-code   Set up Claude Code integration
+  contextfs install cursor        Set up Cursor integration
+  contextfs install codex         Set up Codex integration
+  contextfs init                  Re-run setup in current project
+  contextfs build                 Build all summaries
   contextfs build --target <file> Update one file
-  contextfs demo <file>           Try it on any single file
-  contextfs query "<text>"         Search summaries
+  contextfs demo <file>          Try it on any single file
+  contextfs query "<text>"        Search summaries
 `);
 }
 
@@ -115,6 +122,18 @@ async function runDemoCommand(args: string[]) {
   }
 
   await runDemo(args[0]);
+}
+
+async function runInstallCommand(args: string[]) {
+  let editor: "claude-code" | "cursor" | "codex" | "all" | undefined;
+
+  for (const arg of args) {
+    if (arg === "claude-code" || arg === "cursor" || arg === "codex" || arg === "all") {
+      editor = arg;
+    }
+  }
+
+  await runInstall({ editor });
 }
 
 main().catch((err) => {

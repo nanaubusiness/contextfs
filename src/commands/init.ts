@@ -58,21 +58,22 @@ async function setupHook(): Promise<void> {
   }
 }
 
-async function setupClaudeMd(): Promise<void> {
-  const claudeMdPath = path.join(process.cwd(), "CLAUDE.md");
+async function setupClaudeMd(cwd?: string): Promise<void> {
+  const targetDir = cwd || process.cwd();
+  const claudeMdPath = path.join(targetDir, "CLAUDE.md");
 
   try {
     const existing = await fs.readFile(claudeMdPath, "utf-8");
     if (existing.includes("## ContextFS")) {
-      console.log("CLAUDE.md already has ContextFS rules");
+      console.log(`  CLAUDE.md already has ContextFS rules (${targetDir})`);
     } else {
       await fs.writeFile(claudeMdPath, existing.trim() + "\n\n" + CLAUDE_MD_RULES + "\n", "utf-8");
-      console.log("CLAUDE.md updated with ContextFS rules");
+      console.log(`  CLAUDE.md updated with ContextFS rules (${targetDir})`);
     }
   } catch (err: any) {
     if (err.code === "ENOENT") {
       await fs.writeFile(claudeMdPath, CLAUDE_MD_RULES + "\n", "utf-8");
-      console.log("CLAUDE.md created with ContextFS rules");
+      console.log(`  CLAUDE.md created with ContextFS rules (${targetDir})`);
     } else {
       throw err;
     }
@@ -82,24 +83,36 @@ async function setupClaudeMd(): Promise<void> {
 export async function runInit(args: {
   hookOnly?: boolean;
   claudeMdOnly?: boolean;
+  editor?: "claude-code" | "cursor" | "codex";
+  projectDir?: string;
 } = {}): Promise<void> {
-  const { hookOnly, claudeMdOnly } = args;
+  const { hookOnly, claudeMdOnly, editor, projectDir } = args;
 
   // Both flags = run everything (default behavior)
   const doHook = !claudeMdOnly;
   const doClaudeMd = !hookOnly;
 
-  if (doHook) await setupHook();
-  if (doClaudeMd) await setupClaudeMd();
+  // Claude Code is the only editor with a native hook system
+  if (doHook && editor === "claude-code") {
+    await setupHook();
+  }
 
-  if (doHook && doClaudeMd) {
+  if (doClaudeMd) {
+    await setupClaudeMd(projectDir);
+  }
+
+  if ((doHook && editor !== "claude-code") || doClaudeMd) {
     console.log("");
     console.log("ContextFS is ready!");
     console.log("");
-    console.log("  /contextfs build        Build all summaries");
-    console.log("  /contextfs query \"<text>\" Search summaries");
-    console.log("  /contextfs init         Re-run setup in a new project");
+    console.log("  contextfs build           Build all summaries");
+    console.log("  contextfs query \"<text>\"  Search summaries");
+    console.log("  contextfs init            Re-run setup in a new project");
     console.log("");
-    console.log("Every file save in Claude Code will now update that file's summary automatically.");
+    if (editor === "claude-code") {
+      console.log("Every file save in Claude Code will now update that file's summary automatically.");
+    } else {
+      console.log("Summaries will update automatically when you edit files.");
+    }
   }
 }

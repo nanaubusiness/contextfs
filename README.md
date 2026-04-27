@@ -17,43 +17,53 @@ You ask about auth code
 
 ## Works With Any Editor
 
-ContextFS summaries are plain text — any AI coding tool can read them.
+ContextFS summaries are plain text — any AI coding tool can read them. And now all editors get automatic updates on file save.
 
-- **Claude Code** — Full integration (auto-hook + CLAUDE.md rules)
-- **Cursor** — Run `contextfs build`, then tell Cursor to read `.summary` files
-- **Codex/OpenAI** — Same as above
-- **Any editor** — `contextfs query` finds files, `.summary` files are universally readable
+| Editor | Integration | Auto-update |
+|--------|-------------|-------------|
+| **Claude Code** | Native FileChanged hook | Yes — built in |
+| **Cursor** | `.cursor/rules/` + fswatch daemon | Yes |
+| **Codex** | `AGENTS.md` + fswatch daemon | Yes |
+| **Any editor** | `contextfs query` + `.summary` files | Manual |
 
 ## Install
 
-Works with Claude Code, Cursor, Codex, and any AI editor.
+One command, works with Claude Code, Cursor, and Codex.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
-cd your-project
-contextfs init   # Claude Code gets full integration; others: just run build
 ```
 
-The script clones the repo and extracts the pre-built binary — no npm or build step required.
+The installer auto-detects which editors you have and sets up everything automatically.
 
-**Requirements:** Node.js 18+
+**Editor-specific install:**
+```bash
+contextfs install claude-code   # Claude Code only
+contextfs install cursor        # Cursor only
+contextfs install codex         # Codex only
+contextfs install               # Auto-detect (default)
+```
 
-## Claude Code Commands
+**Requirements:** Node.js 18+, `fswatch` (macOS) or `inotifywait` (Linux)
+
+## Commands
 
 ```
-/contextfs build         Summarize your entire codebase (Claude Haiku)
-/contextfs init         Set up in a new project
-/contextfs query <text> Find files related to a topic
-/contextfs demo <file>  Preview summaries on any file
+contextfs install               Auto-detect editors and install
+contextfs build                 Build all summaries
+contextfs build --target <file> Update one file
+contextfs query "<text>"        Search summaries
+contextfs demo <file>           Preview summary for one file
+contextfs init                  Re-run setup in current project
 ```
 
 **Rule:** Before reading any code file, query ContextFS first.
 
 ## What You Get
 
-- **After install:** Run `/contextfs build` — Claude Haiku summarizes every file once
-- **Every save:** The FileChanged hook auto-updates only that file's summary
-- **Every question:** Claude reads summaries first, raw files only when needed
+- **After install:** `contextfs build` — Claude Haiku summarizes every file once
+- **Every save:** Background watcher auto-updates that file's summary (all editors)
+- **Every question:** AI reads summaries first, raw files only when needed
 
 ## What Gets Summarized
 
@@ -141,16 +151,16 @@ Core logic:
 Risk: high
 ```
 
-## ContextFS in Claude Code
+## ContextFS in Your Editor
 
-After running `contextfs init` in a project:
+After running `contextfs install` in a project:
 
-1. Claude Code automatically uses ContextFS summaries when you ask about code
+1. The AI automatically reads ContextFS summaries when you ask about code
 2. Every file save updates that file's summary silently in the background
 3. New files are summarized automatically when created
-4. Claude reads raw files only when the summary isn't detailed enough
+4. The AI reads raw files only when the summary isn't detailed enough
 
-The `CLAUDE.md` rules in your project tell Claude: "always query ContextFS before reading raw files."
+The editor-specific rules (CLAUDE.md, `.cursor/rules/`, AGENTS.md) tell the AI: "always query ContextFS before reading raw files."
 
 ## License
 

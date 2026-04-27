@@ -51,57 +51,19 @@ fi
 echo "ContextFS installed to ~/.local/bin/contextfs"
 echo ""
 
-# ── Find all Claude Code projects and set up ContextFS in each ─────────────────
-echo "Scanning for Claude Code projects..."
+# ── Run contextfs install (handles editor detection + project setup) ─────────────
+echo "Setting up ContextFS for your editors and projects..."
 echo ""
 
-FOUND=0
-SETUP=0
-
-# Find all directories containing a CLAUDE.md file
-while IFS= read -r project_dir; do
-    project_dir="${project_dir%/*}"  # remove the /CLAUDE.md part
-    FOUND=$((FOUND + 1))
-
-    # Skip the install dir itself
-    if [ "$(realpath "$project_dir")" = "$(realpath "$INSTALL_DIR")" ]; then
-        continue
-    fi
-
-    echo "[$FOUND] Found: $project_dir"
-
-    cd "$project_dir"
-
-    # Set up hook (idempotent — safe to run multiple times)
-    if grep -q "contextfs" "${HOME}/.claude/settings.json" 2>/dev/null; then
-        echo "    Hook already configured"
-    else
-        contextfs init --hook-only 2>/dev/null && echo "    Hook installed" || true
-    fi
-
-    # Set up CLAUDE.md rules
-    if [ -f "CLAUDE.md" ] && grep -q "## ContextFS" "CLAUDE.md" 2>/dev/null; then
-        echo "    CLAUDE.md already has ContextFS rules"
-    else
-        contextfs init --claude-md-only 2>/dev/null && echo "    CLAUDE.md updated" || true
-    fi
-
-    SETUP=$((SETUP + 1))
-    echo ""
-
-done < <(find "$HOME" -name "CLAUDE.md" -not -path "*/node_modules/*" -not -path "*/.git/*" 2>/dev/null)
-
-if [ "$FOUND" -eq 0 ]; then
-    echo "No Claude Code projects found."
-    echo ""
-    echo "Go to your project directory and run:"
-    echo "  contextfs init"
-else
-    echo "Set up ContextFS in $SETUP Claude Code project(s)."
-fi
+contextfs install || true
 
 echo ""
 echo "Done!"
 echo ""
-echo "  /contextfs build        Summarize your codebase"
-echo "  /contextfs query <text> Find files by topic"
+echo "  contextfs build          Summarize your codebase"
+echo "  contextfs query <text>   Find files by topic"
+echo ""
+echo "Editor integrations:"
+echo "  Claude Code — /contextfs build, /contextfs query"
+echo "  Cursor     — same commands, plus auto-update on save"
+echo "  Codex      — same commands, plus auto-update on save"
