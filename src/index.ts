@@ -39,10 +39,13 @@ function printUsage() {
   console.log(`ContextFS
 
 Usage:
-  contextfs install                Auto-detect editors and set up ContextFS
-  contextfs install claude-code   Set up Claude Code integration
-  contextfs install cursor        Set up Cursor integration
-  contextfs install codex         Set up Codex integration
+  contextfs install                Auto-detect editors and projects, show checklist
+  contextfs install --yes          Auto-confirm checklist
+  contextfs install --project <dir>  Add a project manually
+  contextfs install claude-code   Set up Claude Code only
+  contextfs install cursor         Set up Cursor only
+  contextfs install codex          Set up Codex only
+  contextfs install vscode         Set up VS Code only
   contextfs init                  Re-run setup in current project
   contextfs build                 Build all summaries
   contextfs build --target <file> Update one file
@@ -125,15 +128,25 @@ async function runDemoCommand(args: string[]) {
 }
 
 async function runInstallCommand(args: string[]) {
-  let editor: "claude-code" | "cursor" | "codex" | "all" | undefined;
+  let editor: "claude-code" | "cursor" | "codex" | "vscode" | "all" | undefined;
+  let autoConfirm = false;
+  const projectDirs: string[] = [];
 
-  for (const arg of args) {
-    if (arg === "claude-code" || arg === "cursor" || arg === "codex" || arg === "all") {
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "claude-code" || arg === "cursor" || arg === "codex" || arg === "vscode" || arg === "all") {
       editor = arg;
+    } else if (arg === "--yes" || arg === "-y") {
+      autoConfirm = true;
+    } else if (arg === "--project" && i + 1 < args.length) {
+      projectDirs.push(args[++i]);
+    } else if (arg === "--project" && i + 1 >= args.length) {
+      console.error("Error: --project requires a directory argument");
+      process.exit(1);
     }
   }
 
-  await runInstall({ editor });
+  await runInstall({ editor, projectDirs: projectDirs.length > 0 ? projectDirs : undefined, autoConfirm });
 }
 
 main().catch((err) => {

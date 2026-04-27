@@ -4,7 +4,7 @@ import * as os from "os";
 import { spawn, ChildProcess } from "child_process";
 import * as proc from "process";
 
-type Editor = "claude-code" | "cursor" | "codex";
+type Editor = "claude-code" | "cursor" | "codex" | "vscode";
 
 // ── Launcher plist/daemon files ─────────────────────────────────────────────────
 
