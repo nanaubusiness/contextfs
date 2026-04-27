@@ -11,11 +11,9 @@ Before reading raw source files, query the ContextFS summary system:
 This applies to every file in every project.
 `;
 
-export async function runInit(): Promise<void> {
+async function setupHook(): Promise<void> {
   const homeDir = os.homedir();
   const settingsPath = path.join(homeDir, ".claude", "settings.json");
-
-  // ─── Hook setup ───────────────────────────────────────────────────────────────
   const hookCommand = `contextfs build --root "$(pwd)" --target "$f"`;
 
   const hookEntry = {
@@ -39,58 +37,69 @@ export async function runInit(): Promise<void> {
     if (settings.hooks?.FileChanged) {
       const existing = settings.hooks.FileChanged[0]?.hooks?.[0]?.command || "";
       if (existing.includes("contextfs")) {
-        console.log("ContextFS hook already configured in ~/.claude/settings.json");
+        console.log("ContextFS hook already configured");
       } else {
         settings.hooks.FileChanged = hookEntry.FileChanged;
         await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
-        console.log("Added ContextFS hook to ~/.claude/settings.json");
+        console.log("ContextFS hook installed");
       }
     } else {
       if (!settings.hooks) settings.hooks = {};
       settings.hooks.FileChanged = hookEntry.FileChanged;
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
-      console.log("Added ContextFS hook to ~/.claude/settings.json");
+      console.log("ContextFS hook installed");
     }
   } catch (err: any) {
     if (err.code === "ENOENT") {
-      console.log("Claude Code settings not found at ~/.claude/settings.json");
-      console.log("To use ContextFS with Claude Code:");
-      console.log("1. Make sure Claude Code is installed");
-      console.log("2. Add to ~/.claude/settings.json:");
-      console.log(JSON.stringify({ hooks: hookEntry }, null, 2));
+      console.log("Claude Code settings not found — hook not installed");
     } else {
       throw err;
     }
   }
+}
 
-  // ─── CLAUDE.md setup ─────────────────────────────────────────────────────────
+async function setupClaudeMd(): Promise<void> {
   const claudeMdPath = path.join(process.cwd(), "CLAUDE.md");
 
   try {
     const existing = await fs.readFile(claudeMdPath, "utf-8");
     if (existing.includes("## ContextFS")) {
-      console.log("ContextFS already in CLAUDE.md, skipping");
+      console.log("CLAUDE.md already has ContextFS rules");
     } else {
       await fs.writeFile(claudeMdPath, existing.trim() + "\n\n" + CLAUDE_MD_RULES + "\n", "utf-8");
-      console.log("Added ContextFS rules to CLAUDE.md");
+      console.log("CLAUDE.md updated with ContextFS rules");
     }
   } catch (err: any) {
     if (err.code === "ENOENT") {
       await fs.writeFile(claudeMdPath, CLAUDE_MD_RULES + "\n", "utf-8");
-      console.log("Created CLAUDE.md with ContextFS rules");
+      console.log("CLAUDE.md created with ContextFS rules");
     } else {
       throw err;
     }
   }
+}
 
-  console.log("");
-  console.log("ContextFS is ready!");
-  console.log("");
-  console.log("Usage:");
-  console.log("  /contextfs build        Build all summaries");
-  console.log("  /contextfs query \"<text>\" Search summaries");
-  console.log("  /contextfs init         Re-run setup in a new project");
-  console.log("");
-  console.log("Every file save in Claude Code will now update that file's summary automatically.");
-  console.log("(You may need to restart Claude Code for changes to take effect.)");
+export async function runInit(args: {
+  hookOnly?: boolean;
+  claudeMdOnly?: boolean;
+} = {}): Promise<void> {
+  const { hookOnly, claudeMdOnly } = args;
+
+  // Both flags = run everything (default behavior)
+  const doHook = !claudeMdOnly;
+  const doClaudeMd = !hookOnly;
+
+  if (doHook) await setupHook();
+  if (doClaudeMd) await setupClaudeMd();
+
+  if (doHook && doClaudeMd) {
+    console.log("");
+    console.log("ContextFS is ready!");
+    console.log("");
+    console.log("  /contextfs build        Build all summaries");
+    console.log("  /contextfs query \"<text>\" Search summaries");
+    console.log("  /contextfs init         Re-run setup in a new project");
+    console.log("");
+    console.log("Every file save in Claude Code will now update that file's summary automatically.");
+  }
 }

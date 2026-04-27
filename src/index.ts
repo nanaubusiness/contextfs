@@ -20,7 +20,7 @@ async function main() {
   } else if (command === "query") {
     await runQueryCommand(args.slice(1));
   } else if (command === "init") {
-    await runInit();
+    await runInitCommand(args.slice(1));
   } else if (command === "demo") {
     await runDemoCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
@@ -40,7 +40,7 @@ Usage:
   contextfs build                 Build all summaries (Claude Code subscription auto-detected)
   contextfs build --target <file> Update one file
   contextfs demo <file>           Try it on any single file
-  contextfs query "<text>"        Search summaries
+  contextfs query "<text>"         Search summaries
 `);
 }
 
@@ -91,6 +91,18 @@ async function runQueryCommand(args: string[]) {
   }
 
   await runQuery({ rootDir, queryText });
+}
+
+async function runInitCommand(args: string[]) {
+  let hookOnly = false;
+  let claudeMdOnly = false;
+
+  for (const arg of args) {
+    if (arg === "--hook-only") hookOnly = true;
+    else if (arg === "--claude-md-only") claudeMdOnly = true;
+  }
+
+  await runInit({ hookOnly, claudeMdOnly });
 }
 
 async function runDemoCommand(args: string[]) {
