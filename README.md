@@ -2,25 +2,36 @@
 
 > Less context. Less tokens. Less money.
 
-ContextFS is a Claude Code plugin that generates plain-text summaries of your codebase — once. Then Claude reads summaries instead of raw files. Same understanding, a fraction of the token cost.
+ContextFS generates plain-text summaries of your codebase — once. Then any AI reads summaries instead of raw files. Same understanding, a fraction of the token cost.
 
 ## How It Works
 
 ```
 You ask about auth code
-  → Claude queries ContextFS summaries
+  → AI queries ContextFS summaries
   → Reads 5-line summaries instead of 500-line files
   → Uses 80% fewer tokens
 ```
 
 **Claude Code users:** No API key needed. Your subscription token is used automatically.
 
+## Works With Any Editor
+
+ContextFS summaries are plain text — any AI coding tool can read them.
+
+- **Claude Code** — Full integration (auto-hook + CLAUDE.md rules)
+- **Cursor** — Run `contextfs build`, then tell Cursor to read `.summary` files
+- **Codex/OpenAI** — Same as above
+- **Any editor** — `contextfs query` finds files, `.summary` files are universally readable
+
 ## Install
+
+Works with Claude Code, Cursor, Codex, and any AI editor.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
 cd your-project
-contextfs init
+contextfs init   # Claude Code gets full integration; others: just run build
 ```
 
 The script clones the repo and extracts the pre-built binary — no npm or build step required.
