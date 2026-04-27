@@ -5,6 +5,8 @@ import { runQuery } from "./commands/query.js";
 import { runInit } from "./commands/init.js";
 import { runDemo } from "./commands/demo.js";
 import { runInstall } from "./commands/install.js";
+import { runMCP } from "./commands/mcp.js";
+import { runCompact } from "./commands/compact.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -26,6 +28,10 @@ async function main() {
     await runDemoCommand(args.slice(1));
   } else if (command === "install") {
     await runInstallCommand(args.slice(1));
+  } else if (command === "mcp") {
+    await runMCP();
+  } else if (command === "compact") {
+    await runCompactCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
     printUsage();
   } else {
@@ -51,6 +57,7 @@ Usage:
   contextfs build --target <file> Update one file
   contextfs demo <file>          Try it on any single file
   contextfs query "<text>"        Search summaries
+  contextfs compact               Compact session history at 65% context
 `);
 }
 
@@ -147,6 +154,22 @@ async function runInstallCommand(args: string[]) {
   }
 
   await runInstall({ editor, projectDirs: projectDirs.length > 0 ? projectDirs : undefined, autoConfirm });
+}
+
+async function runCompactCommand(args: string[]) {
+  let sessionPath: string | undefined;
+  let rootDir = process.cwd();
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--session" && i + 1 < args.length) {
+      sessionPath = args[++i];
+    } else if (arg === "--root" && i + 1 < args.length) {
+      rootDir = args[++i];
+    }
+  }
+
+  await runCompact({ sessionPath, rootDir });
 }
 
 main().catch((err) => {

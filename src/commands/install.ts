@@ -40,10 +40,13 @@ function yesNoPrompt(question: string): Promise<boolean> {
 // ── Constants ────────────────────────────────────────────────────────────────────
 
 const CLAUDE_MD_RULES = `## ContextFS — Summary Files
-Before reading raw source files, query the ContextFS summary system:
-1. Check if \`*.summary\` files and \`context-map.json\` exist
-2. Use \`contextfs query "<search>" --root <dir>\` to find relevant files
-3. Only read raw files when: the summary is insufficient, you need full implementation, or the file has no summary
+
+**ALWAYS use the \`contextfs\` MCP tool for file reads.** Never use native file read tools.
+
+Before reading any source file:
+1. Use \`contextfs_read_file\` tool — it returns .summary content when available
+2. Only request raw file access when no summary exists and you truly need the raw implementation
+3. If prompted to approve raw access — only approve if summary is insufficient
 
 This applies to every file in every project.
 `;
@@ -88,12 +91,90 @@ const VSCODE_SETTINGS_CONTENT = {
   "search.useParentIgnoreFiles": false,
 };
 
+// ── MCP Server Configuration ────────────────────────────────────────────────────
+
+const MCP_BIN = os.homedir() + "/.local/bin/contextfs";
+
+const MCP_CONFIG = {
+  command: MCP_BIN,
+  args: ["mcp"],
+  env: {
+    PATH: os.homedir() + "/.local/bin:/usr/local/bin:/usr/bin:/bin",
+  },
+};
+
+async function setupMCP(editor: Editor): Promise<void> {
+  if (editor === "claude-code") {
+    const settingsPath = path.join(os.homedir(), ".claude", "settings.json");
+    try {
+      let settings: Record<string, unknown> = {};
+      const existing = await fs.readFile(settingsPath, "utf-8");
+      settings = JSON.parse(existing);
+      if (!settings.mcpServers) (settings as any).mcpServers = {};
+      (settings as any).mcpServers.contextfs = MCP_CONFIG;
+      await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");
+      console.log("  Claude Code MCP server configured");
+    } catch {
+      console.log("  Claude Code settings not found — MCP not configured");
+    }
+  } else if (editor === "cursor") {
+    const mcpPath = path.join(os.homedir(), ".cursor", "mcp.json");
+    try {
+      const existing = await fs.readFile(mcpPath, "utf-8");
+      const parsed = JSON.parse(existing);
+      if (!parsed.contextfs) {
+        parsed.contextfs = MCP_CONFIG;
+        await fs.writeFile(mcpPath, JSON.stringify(parsed, null, 2), "utf-8");
+      }
+    } catch {
+      await fs.writeFile(mcpPath, JSON.stringify({ contextfs: MCP_CONFIG }, null, 2), "utf-8");
+    }
+    console.log("  Cursor MCP server configured");
+  } else if (editor === "codex") {
+    // Codex uses TOML config
+    const codexDir = path.join(os.homedir(), ".codex");
+    await fs.mkdir(codexDir, { recursive: true });
+    const configPath = path.join(codexDir, "config.toml");
+    const mcpEntry = `
+[mcp_servers.contextfs]
+command = "${MCP_BIN}"
+args = ["mcp"]
+`;
+    try {
+      const existing = await fs.readFile(configPath, "utf-8");
+      if (!existing.includes("contextfs")) {
+        await fs.writeFile(configPath, existing.trim() + "\n" + mcpEntry, "utf-8");
+      }
+    } catch {
+      await fs.writeFile(configPath, mcpEntry.trim() + "\n", "utf-8");
+    }
+    console.log("  Codex MCP server configured");
+  } else if (editor === "vscode") {
+    const mcpPath = path.join(os.homedir(), ".vscode", "mcp.json");
+    await fs.mkdir(path.join(os.homedir(), ".vscode"), { recursive: true });
+    try {
+      const existing = await fs.readFile(mcpPath, "utf-8");
+      const parsed = JSON.parse(existing);
+      if (!parsed.contextfs) {
+        parsed.contextfs = MCP_CONFIG;
+        await fs.writeFile(mcpPath, JSON.stringify(parsed, null, 2), "utf-8");
+      }
+    } catch {
+      await fs.writeFile(mcpPath, JSON.stringify({ contextfs: MCP_CONFIG }, null, 2), "utf-8");
+    }
+    console.log("  VS Code MCP server configured");
+  }
+}
+
 // ── Per-editor installation ─────────────────────────────────────────────────────
 
 async function installForEditor(
   editor: Editor,
   projects: string[],
 ): Promise<void> {
+  // Set up MCP server for all editors
+  await setupMCP(editor);
+
   if (editor === "claude-code") {
     for (const projectDir of projects) {
       await runInit({ hookOnly: false, claudeMdOnly: false, projectDir });
