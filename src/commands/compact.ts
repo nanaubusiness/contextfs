@@ -24,7 +24,7 @@ async function summarizeText(prompt: string): Promise<string> {
     const { Anthropic } = await import("@anthropic-ai/sdk");
     const client = new Anthropic({ apiKey });
     const response = await client.messages.create({
-      model: "claude-haiku-4-5-20251101",
+      model: "claude-opus-4-6",
       max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
