@@ -72,7 +72,7 @@ function promptApproval(filePath: string): Promise<boolean> {
   return new Promise((resolve) => {
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout,
+      output: process.stderr,
     });
     rl.question(
       `\n🪞 ContextFS: AI requested access to ${filePath}\n   This file has no .summary — raw access costs more tokens.\n   Approve? [y/N] `,
