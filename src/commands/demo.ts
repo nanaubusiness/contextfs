@@ -7,8 +7,23 @@ const CHARS_PER_TOKEN = 4;
 
 export async function runDemo(filePath: string): Promise<void> {
   const absolutePath = path.resolve(filePath);
-  const content = await fs.readFile(absolutePath, "utf-8");
-  const parsed = await parseFile(absolutePath);
+  let content: string;
+  try {
+    content = await fs.readFile(absolutePath, "utf-8");
+  } catch (err: any) {
+    console.error(`\n❌ Failed to read file: ${absolutePath}`);
+    console.error(`   ${err.code === "ENOENT" ? "File not found." : err.message}`);
+    process.exit(1);
+  }
+
+  let parsed: Awaited<ReturnType<typeof parseFile>>;
+  try {
+    parsed = await parseFile(absolutePath);
+  } catch (err: any) {
+    console.error(`\n❌ Failed to parse file: ${absolutePath}`);
+    console.error(`   ${err.message}`);
+    process.exit(1);
+  }
 
   const rawTokens = Math.ceil(content.length / CHARS_PER_TOKEN);
 
@@ -38,7 +53,15 @@ export async function runDemo(filePath: string): Promise<void> {
     process.exit(1);
   }
 
-  const summary = await summarizer.summarize(parsed);
+  let summary: string;
+  try {
+    summary = await summarizer.summarize(parsed);
+  } catch (err: any) {
+    console.error(`\n❌ Summarization failed: ${err.message}`);
+    console.error("\nTo fix, set your ANTHROPIC_API_KEY environment variable:");
+    console.error("  export ANTHROPIC_API_KEY=sk-ant-...\n");
+    process.exit(1);
+  }
   const summaryTokens = Math.ceil(summary.length / CHARS_PER_TOKEN);
   const savings = ((rawTokens - summaryTokens) / rawTokens * 100).toFixed(1);
 

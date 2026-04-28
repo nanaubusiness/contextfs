@@ -67,7 +67,7 @@ const CURSOR_HOOKS_CONTENT = {
   hooks: {
     afterFileEdit: [
       {
-        command: "contextfs build --root \"$(pwd)\" --target \"{path}\"",
+        command: "contextfs build --root '$(pwd)' --target '{path}'",
       },
     ],
   },
@@ -93,13 +93,13 @@ const VSCODE_SETTINGS_CONTENT = {
 
 // ── MCP Server Configuration ────────────────────────────────────────────────────
 
-const MCP_BIN = os.homedir() + "/.local/bin/contextfs";
+const MCP_BIN = path.join(os.homedir(), ".local", "bin", "contextfs");
 
 const MCP_CONFIG = {
   command: MCP_BIN,
   args: ["mcp"],
   env: {
-    PATH: os.homedir() + "/.local/bin:/usr/local/bin:/usr/bin:/bin",
+    PATH: path.join(os.homedir(), ".local", "bin") + ":/usr/local/bin:/usr/bin:/bin",
   },
 };
 

@@ -7,6 +7,7 @@ import { runDemo } from "./commands/demo.js";
 import { runInstall } from "./commands/install.js";
 import { runMCP } from "./commands/mcp.js";
 import { runCompact } from "./commands/compact.js";
+import { runUpdate } from "./commands/update.js";
 
 async function main() {
   const args = process.argv.slice(2);
@@ -32,6 +33,8 @@ async function main() {
     await runMCP();
   } else if (command === "compact") {
     await runCompactCommand(args.slice(1));
+  } else if (command === "update") {
+    await runUpdateCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
     printUsage();
   } else {
@@ -58,6 +61,8 @@ Usage:
   contextfs demo <file>          Try it on any single file
   contextfs query "<text>"        Search summaries
   contextfs compact               Compact session history into a structured summary
+  contextfs update               Update to the latest version from GitHub
+  contextfs update --force       Force rebuild even if already up to date
 `);
 }
 
@@ -144,11 +149,12 @@ async function runInstallCommand(args: string[]) {
       editor = arg;
     } else if (arg === "--yes" || arg === "-y") {
       autoConfirm = true;
-    } else if (arg === "--project" && i + 1 < args.length) {
+    } else if (arg === "--project") {
+      if (i + 1 >= args.length || args[i + 1].startsWith("-")) {
+        console.error("Error: --project requires a directory argument");
+        process.exit(1);
+      }
       projectDirs.push(args[++i]);
-    } else if (arg === "--project" && i + 1 >= args.length) {
-      console.error("Error: --project requires a directory argument");
-      process.exit(1);
     }
   }
 
@@ -169,6 +175,11 @@ async function runCompactCommand(args: string[]) {
   }
 
   await runCompact({ sessionPath, rootDir });
+}
+
+async function runUpdateCommand(args: string[]) {
+  const force = args.includes("--force") || args.includes("-f");
+  await runUpdate({ force });
 }
 
 main().catch((err) => {

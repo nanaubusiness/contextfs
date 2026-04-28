@@ -1,6 +1,11 @@
 # ContextFS
 
-ContextFS generates plain-text summaries of your codebase. Claude reads summaries instead of raw files — same understanding, 80% fewer tokens.
+Note: The `/contextfs` commands below are Claude Code only.
+For Cursor, Codex, and other editors: use the `contextfs` CLI directly
+(e.g. `contextfs build`, `contextfs query`) or rely on the background
+watcher that auto-updates summaries on file save.
+
+ContextFS generates plain-text summaries of your codebase. Claude reads summaries instead of raw files — same understanding, ~81% fewer tokens.
 
 ## Commands
 
@@ -74,5 +79,7 @@ hash: abc123def456
 ## How It Works
 
 1. **`/contextfs build`** — Claude Opus summarizes all code files, writes `*.summary` sidecar files and `context-map.json`
-2. **FileChanged hook** — Every file save triggers `contextfs build --target <file>` automatically
+2. **Background watcher** — Every file save triggers `contextfs build --target <file>` automatically (all editors)
 3. **`/contextfs query`** — Searches summaries by relevance, returns top matches with scores
+4. **Claude Code (MCP)** — The MCP server intercepts file reads and returns `.summary` content automatically when available. Files without summaries trigger an approval prompt.
+5. **Other editors** — Summaries update on file save via the watcher. Use `contextfs query` CLI to search summaries before reading raw files.

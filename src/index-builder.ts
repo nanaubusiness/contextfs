@@ -34,7 +34,11 @@ export async function buildContextMap(
 export async function loadContextMap(rootDir: string): Promise<ContextMap> {
   const mapPath = path.join(rootDir, "context-map.json");
   const content = await fs.readFile(mapPath, "utf-8");
-  return JSON.parse(content) as ContextMap;
+  try {
+    return JSON.parse(content) as ContextMap;
+  } catch {
+    throw new Error(`Invalid JSON in context-map.json at ${mapPath}. Run 'contextfs build' to regenerate.`);
+  }
 }
 
 export async function saveContextMap(

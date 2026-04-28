@@ -11,10 +11,12 @@ Before reading raw source files, query the ContextFS summary system:
 This applies to every file in every project.
 `;
 
-async function setupHook(): Promise<void> {
+async function setupHook(projectDir?: string): Promise<void> {
   const homeDir = os.homedir();
   const settingsPath = path.join(homeDir, ".claude", "settings.json");
-  const hookCommand = `contextfs build --root "$(pwd)" --target "$f"`;
+  const cwd = projectDir || process.cwd();
+  const safeCwd = cwd.replace(/'/g, "'\\''");
+  const hookCommand = `contextfs build --root '${safeCwd}' --target '$f'`;
 
   const newHook = {
     type: "command",
@@ -91,7 +93,7 @@ export async function runInit(args: {
 
   // Claude Code is the only editor with a native hook system
   if (doHook && editor === "claude-code") {
-    await setupHook();
+    await setupHook(projectDir);
   }
 
   if (doClaudeMd) {

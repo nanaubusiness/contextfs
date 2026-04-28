@@ -53,7 +53,8 @@ async function writeLauncherDaemon(projectDirs: string[], editor: Editor): Promi
     await fs.chmod(plistPath, 0o644);
 
     // Load the daemon
-    spawn("launchctl", ["load", plistPath], { detached: true, stdio: "ignore" });
+    const launchctlProc = spawn("launchctl", ["load", plistPath], { detached: true, stdio: "ignore" });
+    launchctlProc.on("error", (err) => console.error(`[contextfs] Failed to start daemon: ${err.message}`));
     console.log("  Watcher daemon started (launchd)");
   } else {
     // Linux: systemd user service
@@ -73,8 +74,10 @@ WantedBy=default.target
 `;
     const servicePath = path.join(systemdDir, "contextfs-watcher.service");
     await fs.writeFile(servicePath, serviceContent, "utf-8");
-    spawn("systemctl", ["--user", "daemon-reload"], { detached: true, stdio: "ignore" });
-    spawn("systemctl", ["--user", "enable", "--now", "contextfs-watcher"], { detached: true, stdio: "ignore" });
+    const systemctlReload = spawn("systemctl", ["--user", "daemon-reload"], { detached: true, stdio: "ignore" });
+    systemctlReload.on("error", (err) => console.error(`[contextfs] Failed to reload systemd daemon: ${err.message}`));
+    const systemctlEnable = spawn("systemctl", ["--user", "enable", "--now", "contextfs-watcher"], { detached: true, stdio: "ignore" });
+    systemctlEnable.on("error", (err) => console.error(`[contextfs] Failed to enable systemd service: ${err.message}`));
     console.log("  Watcher daemon started (systemd)");
   }
 }
@@ -82,20 +85,20 @@ WantedBy=default.target
 function buildWatcherScript(projectDirs: string[]): string {
   const dirsArg = projectDirs.map(d => `"${d}"`).join(" ");
   const isMac = process.platform === "darwin";
-  const CONTEXTFS_BIN = os.homedir() + "/.local/bin/contextfs";
+  const CONTEXTFS_BIN = path.join(os.homedir(), ".local", "bin", "contextfs");
   const HOME = os.homedir();
 
   if (isMac) {
     // fswatch: recursive, exclude summary/git/node_modules, print paths
     return `#!/bin/bash
 WATCH_DIRS=(${dirsArg})
-EXCLUDE_PATTERN="--exclude=\\.(summary|git|node_modules|DS_Store)$"
+EXCLUDE_PATTERN="\\.(summary|git|node_modules|DS_Store)$"
 
 for dir in "\${WATCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        fswatch -r $EXCLUDE_PATTERN --format="%path" "$dir" 2>/dev/null | while IFS= read -r file; do
+        fswatch -r --exclude "$EXCLUDE_PATTERN" --format="%path" "$dir" 2>/dev/null | while IFS= read -r file; do
             case "$file" in
-                *.ts|*.tsx|*.js|*.jsx|*.py)
+                *.summary|*.ts|*.tsx|*.js|*.jsx|*.py)
                     filedir="$(dirname "$file")"
                     "$CONTEXTFS_BIN" build --root "$filedir" --target "$file" &
                     ;;

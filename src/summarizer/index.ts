@@ -77,7 +77,11 @@ async function anthropicChat(prompt: string, apiKey: string): Promise<string> {
     messages: [{ role: "user", content: prompt }],
   });
   const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
-  return textBlock ? textBlock.text.trim() : "";
+  if (!textBlock) {
+    console.warn("[contextfs] Empty response from API — no text block returned.");
+    return "";
+  }
+  return textBlock.text.trim();
 }
 
 // ─── Prompt template ─────────────────────────────────────────────────────────
@@ -111,7 +115,12 @@ export async function createLLMSummarizer(): Promise<Summarizer> {
     provider: "anthropic",
     model: "claude-opus-4-6",
     async summarize(file: ParsedFile) {
-      return anthropicChat(buildPrompt(file), apiKey);
+      try {
+        return await anthropicChat(buildPrompt(file), apiKey);
+      } catch (err) {
+        console.warn("[contextfs] API call failed, using mock summary. Set ANTHROPIC_API_KEY for real summaries.");
+        return `[MOCK] ${file.content.slice(0, 100)}`;
+      }
     },
   };
 }

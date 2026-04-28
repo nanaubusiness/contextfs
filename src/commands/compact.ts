@@ -159,8 +159,17 @@ export async function runCompact(args: {
       // Fall back to reading from stdin
       console.error("No session files detected. Reading from stdin...");
       const chunks: string[] = [];
-      process.stdin.on("data", (c) => chunks.push(c.toString()));
-      await new Promise((r) => setTimeout(r, 1000));
+      let hasInput = false;
+      let resolveReady: () => void;
+      process.stdin.on("data", (c) => {
+        hasInput = true;
+        chunks.push(c.toString());
+      });
+      process.stdin.on("end", () => resolveReady?.());
+      await new Promise<void>((resolve) => {
+        resolveReady = resolve;
+        setTimeout(() => resolve(), 1000);
+      });
       conversationText = chunks.join("");
     } else {
       // Read most recent session

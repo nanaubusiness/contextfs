@@ -364,6 +364,10 @@ async function messageLoop(): Promise<void> {
   const lines: string[] = [];
   let resolver: ((line: string) => void) | null = null;
 
+  // Close readline on process exit to prevent handle leak
+  rl.on("close", () => {});
+  process.on("exit", () => rl.close());
+
   // Async line reader
   function readLine(): Promise<string> {
     return new Promise((resolve) => {
@@ -400,7 +404,7 @@ async function messageLoop(): Promise<void> {
         process.stdout.write(JSON.stringify(res) + "\n");
       }
     } catch (err) {
-      // Ignore parse errors silently
+      console.error("[contextfs mcp] Failed to parse MCP message:", err);
     }
   }
 }

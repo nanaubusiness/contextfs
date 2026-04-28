@@ -59,7 +59,11 @@ export async function runQuery(args: {
 
   for (const [relativePath, entry] of Object.entries(contextMap.files)) {
     try {
-      const summaryContent = await fs.readFile(entry.summary_path, "utf-8");
+      const resolved = path.resolve(rootDir, entry.summary_path);
+      if (!resolved.startsWith(path.resolve(rootDir) + path.sep)) {
+        throw new Error(`Invalid path in context-map.json: ${entry.summary_path}`);
+      }
+      const summaryContent = await fs.readFile(resolved, "utf-8");
       const score = scoreFile(queryText, relativePath, summaryContent);
       if (score > 0) {
         results.push({

@@ -11,7 +11,7 @@ function computeHash(content: string): string {
 
 function extractHash(summaryContent: string): string {
   const match = summaryContent.match(/hash:\s*([a-f0-9]+)/i);
-  return match ? match[1] : "";
+  return match?.[1] ?? "";
 }
 
 async function loadExistingSummary(
@@ -31,7 +31,13 @@ async function processFile(
   skipHashCheck: boolean,
 ): Promise<{ path: string; content: string; changed: boolean }> {
   const summaryPath = `${filePath}.summary`;
-  const content = await fs.readFile(filePath, "utf-8");
+  let content: string;
+  try {
+    content = await fs.readFile(filePath, "utf-8");
+  } catch (err) {
+    console.error(`[contextfs] Failed to read ${filePath}: ${err}`);
+    return { path: filePath, content: "", changed: false };
+  }
   const currentHash = computeHash(content);
 
   if (!skipHashCheck) {

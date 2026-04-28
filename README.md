@@ -9,7 +9,7 @@ ContextFS generates plain-text summaries of your codebase — once. Then any AI 
 ```
 You ask about auth code
   → AI queries ContextFS summaries
-  → Reads 5-line summaries instead of 500-line files
+  → Reads ~130-token summaries instead of ~690-token raw files
   → Uses ~81% fewer tokens
 ```
 
