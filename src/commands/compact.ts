@@ -81,7 +81,7 @@ function extractFileMentions(text: string): string[] {
 
 function extractDecisions(text: string): string[] {
   const patterns = [
-    /(?:decided|chose|opted|agreed|concluded|determined) [:@](.+)/gi,
+    /(?:decided|chose|opted|agreed|concluded|determined)[:@](.+)/gi,
     /(?:we'll|I'll|let's go with|going with) ([^.\n]+)/gi,
     /(?:use|using|implement|build) ([^.\n]+?) (?:instead|rather)/gi,
   ];

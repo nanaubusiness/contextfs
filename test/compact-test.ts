@@ -32,6 +32,8 @@ You: Let's use Redis, it's more scalable
 Assistant: Implemented src/auth/rate-limiter.ts using Redis
 You: We also need a user repository
 Assistant: Built src/db/user.repository.ts for user data access
+You: We decided: use auth.ts for authentication module instead
+You: We chose: use db/user.repository for data access layer instead
 You: Can we add email verification?
 Assistant: What about using SendGrid for emails?
 You: Sure, let's use SendGrid
