@@ -67,7 +67,7 @@ const CURSOR_HOOKS_CONTENT = {
   hooks: {
     afterFileEdit: [
       {
-        command: "contextfs build --root '$(pwd)' --target '{path}'",
+        command: "contextfs build --root \"$(pwd)\" --target \"$1\"",
       },
     ],
   },
@@ -248,7 +248,7 @@ async function installForEditor(
       hooks: {
         afterFileEdit: [
           {
-            command: "contextfs build --root \"$(pwd)\" --target \"{path}\"",
+            command: "contextfs build --root \"$(pwd)\" --target \"$1\"",
           },
         ],
       },

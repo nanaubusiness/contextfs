@@ -88,7 +88,7 @@ async function readSummaryOrRaw(filePath: string): Promise<string> {
     return await fs.readFile(filePath, "utf-8");
   }
 
-  return `ACCESS DENIED: ${filePath} has no .summary file and raw access was not approved.\nAsk the user to run: contextfs build --target ${filePath}\nto generate a summary first.`;
+  return `ACCESS DENIED: ${path.basename(filePath)} has no .summary file and raw access was not approved.\nAsk the user to run: contextfs build --target <path>\nto generate a summary first.`;
 }
 
 function promptApproval(filePath: string): Promise<boolean> {

@@ -37,7 +37,7 @@ export async function loadContextMap(rootDir: string): Promise<ContextMap> {
   try {
     return JSON.parse(content) as ContextMap;
   } catch {
-    throw new Error(`Invalid JSON in context-map.json at ${mapPath}. Run 'contextfs build' to regenerate.`);
+    throw new Error(`Invalid JSON in context-map.json. Run 'contextfs build' to regenerate.`);
   }
 }
 

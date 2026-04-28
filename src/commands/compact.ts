@@ -168,7 +168,11 @@ export async function runCompact(args: {
       process.stdin.on("end", () => resolveReady?.());
       await new Promise<void>((resolve) => {
         resolveReady = resolve;
-        setTimeout(() => resolve(), 1000);
+        // Only time out if we haven't received any data yet
+        setTimeout(() => {
+          if (hasInput) return; // data already ended naturally
+          resolve();
+        }, 1000);
       });
       conversationText = chunks.join("");
     } else {

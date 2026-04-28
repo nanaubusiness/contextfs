@@ -47,7 +47,9 @@ async function writeLauncherDaemon(projectDirs: string[], editor: Editor): Promi
   if (process.platform === "darwin") {
     // macOS: launchd
     const plistPath = path.join(home, "Library", "LaunchAgents", "com.contextfs.watcher.plist");
-    const plistContent = LAUNCHD_PLIST.replace("{{WATCHER_SCRIPT}}", watcherScriptPath);
+    const plistContent = LAUNCHD_PLIST
+      .replace("{{HOME}}", home)
+      .replace("{{WATCHER_SCRIPT}}", watcherScriptPath);
     await fs.mkdir(path.dirname(plistPath), { recursive: true });
     await fs.writeFile(plistPath, plistContent, "utf-8");
     await fs.chmod(plistPath, 0o644);
@@ -228,7 +230,8 @@ export async function setupWatcher(
   }
 }
 
-export function stopWatcher(): void {
+// Internal helper — currently unused but kept for future stop functionality
+function stopWatcher(): void {
   if (watcherProcess) {
     watcherProcess.kill();
     watcherProcess = null;

@@ -75,7 +75,7 @@ export async function runUpdate(options: UpdateOptions = {}): Promise<void> {
   if (beforeHash !== afterHash) {
     console.log("\n  Updating source files...");
     try {
-      execSync("git checkout origin/main -- .", { cwd: INSTALL_DIR, stdio: "pipe" });
+      execSync("git reset --hard origin/main", { cwd: INSTALL_DIR, stdio: "pipe" });
     } catch {
       console.error("\n❌ Failed to update source files.");
       return;
@@ -130,8 +130,10 @@ exec node "$DIR/dist/index.js" "$@"
   console.log("\n" + "═".repeat(60));
   if (beforeHash !== afterHash) {
     console.log(`  ✅ Updated: ${beforeHash.slice(0, 8)} → ${afterHash.slice(0, 8)}`);
+  } else if (force) {
+    console.log(`  ✅ Force rebuild complete`);
   } else {
-    console.log(`  ✅ Rebuild complete (force mode)`);
+    console.log(`  ✅ Already on the latest version`);
   }
   console.log("═".repeat(60) + "\n");
 }

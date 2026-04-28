@@ -88,8 +88,8 @@ export async function runInit(args: {
   const { hookOnly, claudeMdOnly, editor, projectDir } = args;
 
   // Both flags = run everything (default behavior)
-  const doHook = !claudeMdOnly;
-  const doClaudeMd = !hookOnly;
+  const doHook = hookOnly || !claudeMdOnly;
+  const doClaudeMd = claudeMdOnly || !hookOnly;
 
   // Claude Code is the only editor with a native hook system
   if (doHook && editor === "claude-code") {
