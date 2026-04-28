@@ -1,6 +1,6 @@
 # ContextFS Test Suite
 
-Real LLM tests using MiniMax API with production code files.
+Real LLM tests using Claude Opus with production code files.
 
 ## Quick Demo (30 seconds)
 
@@ -33,8 +33,8 @@ npx tsx test/generate-2000.ts
 
 ## Test Results
 
-### Real LLM Test (MiniMax, Opus 4.7 pricing)
+### Real LLM Test (Claude Opus 4.6 pricing)
 - **Token savings:** 80.3%
 - **Quality:** 100% of summaries answer all questions
-- **Partial run:** 69/1995 files completed (MiniMax API outage)
+- **Partial run:** 69/1995 files completed (API outage halted test)
 - **Full results:** `test/PARTIAL_RESULTS_69files.txt`

@@ -3,7 +3,7 @@
 /**
  * ContextFS Multi-Format Test
  * Tests token savings across: TypeScript, Markdown, JSON, YAML, SQL
- * Uses real MiniMax LLM
+ * Uses real Claude Opus LLM
  */
 
 import * as fs from "fs/promises";
@@ -25,7 +25,7 @@ interface FileResult {
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║         ContextFS Multi-Format Test (Real LLM with MiniMax)               ║");
+  console.log("║         ContextFS Multi-Format Test (Real LLM with Claude Opus)           ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

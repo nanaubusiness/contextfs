@@ -88,7 +88,7 @@ async function summarizeWithRetry(summarizer: any, parsed: any, fileName: string
 
 async function main() {
   console.log("\n" + "═".repeat(80));
-  console.log("  ContextFS - FULL FILE TEST WITH MiniMax LLM");
+  console.log("  ContextFS - FULL FILE TEST WITH Claude Opus LLM");
   console.log("  Shows: Original File → Generated Summary → Token Analysis");
   console.log("  Features: Retry logic with exponential backoff");
   console.log("═".repeat(80));
@@ -194,7 +194,7 @@ async function main() {
   console.log(`
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                        REAL LLM TEST RESULTS                               ║
-║                     (MiniMax → Opus 4.7 pricing)                          ║
+║                     (Claude Opus 4.6 pricing)                             ║
 ╠══════════════════════════════════════════════════════════════════════════════╣
 ║                                                                              ║
 ║  FILES PROCESSED:                                                            ║
@@ -206,7 +206,7 @@ async function main() {
 ║    Summary tokens:  ~${totalSummaryTokens.toLocaleString().padEnd(47)}║
 ║    Savings:         ${savings.toFixed(1).padEnd(47)}%║
 ║                                                                              ║
-║  COST (Opus 4.7: $5/1M input, $25/1M output)                               ║
+║  COST (Opus 4.6: $5/1M input, $25/1M output)                               ║
 ║    Raw file reads:      $${rawCost.toFixed(2).padEnd(43)}║
 ║    Summary reads:       $${summaryCost.toFixed(2).padEnd(43)}║
 ║    Savings:             $${(rawCost - summaryCost).toFixed(2)} (${savings.toFixed(0)}%)                                    ║

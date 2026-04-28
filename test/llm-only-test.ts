@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * ContextFS Real LLM Test - 100 files with MiniMax
+ * ContextFS Real LLM Test - 100 files with Claude Opus
  */
 
 import * as fs from "fs/promises";
@@ -32,7 +32,7 @@ function canAnswerFromSummary(summary: string, parsed: any): { sufficient: boole
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║           ContextFS - REAL LLM TEST (MiniMax)              ║");
+  console.log("║           ContextFS - REAL LLM TEST (Claude Opus 4.6)       ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -88,7 +88,7 @@ async function main() {
   console.log("║    Summary tokens:     ~" + totalSummaryTokens.toLocaleString());
   console.log("║    Token savings:     " + savings.toFixed(1) + "%");
   console.log("║");
-  console.log("║  COST (Opus 4.7: $5/1M input)");
+  console.log("║  COST (Opus 4.6: $5/1M input)");
   console.log("║    Raw file reads:      $" + rawCost.toFixed(4));
   console.log("║    Summary reads:      $" + summaryCost.toFixed(4));
   console.log("║    Savings:           $" + (rawCost - summaryCost).toFixed(4) + " (" + savings.toFixed(1) + "%)");
@@ -99,7 +99,7 @@ async function main() {
   console.log("║");
   console.log("╠" + "═".repeat(78) + "╣");
   console.log("║");
-  console.log("║  EXTRAPOLATED TO 2,000 FILES");
+  console.log("║  PROJECTED FOR 2,000 FILES");
   const scale = 2000 / files.length;
   console.log("║    Raw tokens:         ~" + Math.round(totalRawTokens * scale).toLocaleString());
   console.log("║    Summary tokens:     ~" + Math.round(totalSummaryTokens * scale).toLocaleString());

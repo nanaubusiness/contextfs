@@ -63,7 +63,7 @@ async function findFiles(dir: string, patterns: string[]): Promise<string[]> {
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════════════════════════════╗");
-  console.log("║         ContextFS Multi-Format Test (Real LLM with MiniMax)               ║");
+  console.log("║         ContextFS Multi-Format Test (Real LLM with Claude Opus)           ║");
   console.log("╚══════════════════════════════════════════════════════════════════════════════╝");
 
   const apiKey = process.env.ANTHROPIC_API_KEY;

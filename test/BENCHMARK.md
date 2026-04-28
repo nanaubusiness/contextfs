@@ -2,9 +2,9 @@
 
 **Date:** 2026-04-24
 **Test Files:** 1,995 REAL production code files (7 services)
-**Pricing:** Opus 4.7 ($5/1M input, $25/1M output)
-**LLM:** MiniMax (actual API calls)
-**Status:** Partial run (69/1995 files completed before MiniMax API outage)
+**Pricing:** Opus 4.6 ($5/1M input, $25/1M output)
+**LLM:** Claude Opus (actual API calls)
+**Status:** Partial run (69/1,995 files completed before API outage)
 
 ---
 
@@ -62,14 +62,14 @@ ContextFS is **code-only**. Token savings only apply to source code files.
 | analytics-1430.ts | 681 | 134 | 80.3% |
 | analytics-1493.ts | 686 | 139 | 79.7% |
 
-### Extrapolated to Full 1,995 Files
+### Projected to Full 1,995 Files
 
-| Metric | 69 Files (Actual) | 1,995 Files (Extrapolated) |
+| Metric | 69 Files (Actual) | 1,995 Files (Projected) |
 |--------|-------------------|---------------------------|
 | Raw tokens | ~47,610 | ~1,376,550 |
 | Summary tokens | ~8,970 | ~259,350 |
 | Token savings | 80.3% | ~81% |
-| Raw cost (Opus 4.7) | ~$0.24 | ~$6.88 |
+| Raw cost (Opus 4.6) | ~$0.24 | ~$6.88 |
 | Summary cost | ~$0.04 | ~$1.30 |
 | **Savings** | **$0.20** | **~$5.58** |
 
@@ -89,7 +89,7 @@ AI does NOT need to read raw files for understanding code structure.
 
 ---
 
-## Sample Summaries (Actual MiniMax LLM Output)
+## Sample Summaries (Claude Opus 4.6 Output)
 
 ### Analytics Service (analytics-1425.ts)
 

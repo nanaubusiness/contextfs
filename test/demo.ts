@@ -3,7 +3,7 @@
 /**
  * ContextFS Quick Demo - Shows it working in 60 seconds
  *
- * Run this to see ContextFS summarize 5 real files with MiniMax API.
+ * Run this to see ContextFS summarize 5 real files with Claude Opus API.
  * No API key needed if ANTHROPIC_API_KEY is set in environment.
  *
  * Usage:
@@ -22,14 +22,14 @@ const CHARS_PER_TOKEN = 4;
 async function main() {
   console.log("\n" + "═".repeat(80));
   console.log("  ContextFS QUICK DEMO");
-  console.log("  Summarizing 5 files with MiniMax API...");
+  console.log("  Summarizing 5 files with Claude Opus API...");
   console.log("═".repeat(80));
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     console.error("\n❌ ERROR: ANTHROPIC_API_KEY not set");
     console.error("\nUsage: ANTHROPIC_API_KEY=sk-... npx tsx test/demo.ts");
-    console.error("\nGet your API key from: https://console.minimax.io");
+    console.error("\nGet your API key from: https://console.anthropic.com");
     process.exit(1);
   }
 
