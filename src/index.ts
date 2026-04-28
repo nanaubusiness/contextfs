@@ -57,7 +57,7 @@ Usage:
   contextfs build --target <file> Update one file
   contextfs demo <file>          Try it on any single file
   contextfs query "<text>"        Search summaries
-  contextfs compact               Compact session history at 65% context
+  contextfs compact               Compact session history into a structured summary
 `);
 }
 
