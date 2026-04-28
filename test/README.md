@@ -37,4 +37,3 @@ npx tsx test/generate-2000.ts
 - **Token savings:** 80.3%
 - **Quality:** 100% of summaries answer all questions
 - **Partial run:** 69/1995 files completed (API outage halted test)
-- **Full results:** `test/PARTIAL_RESULTS_69files.txt`
