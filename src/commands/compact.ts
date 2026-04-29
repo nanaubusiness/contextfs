@@ -202,11 +202,9 @@ function formatTranscript(entries: TranscriptEntry[]): string {
 // ─── Summary Persistence ──────────────────────────────────────────────────────
 
 function projectToSlug(projectPath: string): string {
-  // Claude Code stores projects in folders named by encoding the path:
-  // /Users/admin/Downloads/Executive Assistant → -Users-admin-Downloads-Executive-Assistant
-  // Slashes become hyphens, spaces become hyphens, leading slash becomes a hyphen
-  // Remove .. sequences to prevent path traversal attacks
-  return projectPath.replace(/\//g, "-").replace(/ /g, "-").replace(/^-/, "-").replace(/\.\./g, "-");
+  // Remove .. FIRST (before / so /../ doesn't become .-.- and bypass the check)
+  // Then replace / and spaces with -
+  return projectPath.replace(/\.\./g, "-").replace(/\//g, "-").replace(/ /g, "-").replace(/^-/, "-");
 }
 
 function getSummaryPath(projectPath: string): string {

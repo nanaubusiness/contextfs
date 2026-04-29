@@ -75,6 +75,18 @@ export async function runUpdate(options: UpdateOptions = {}): Promise<void> {
   if (beforeHash !== afterHash) {
     console.log("\n  Updating source files...");
     try {
+      // Check for uncommitted changes before reset --hard
+      const status = execSync("git status --porcelain", { cwd: INSTALL_DIR, encoding: "utf-8" }).trim();
+      if (status) {
+        console.warn("\n  Warning: Local uncommitted changes will be discarded:");
+        console.warn("  " + status.split("\n").slice(0, 5).join("\n  "));
+        if (status.split("\n").length > 5) {
+          console.warn(`  ... and ${status.split("\n").length - 5} more files`);
+        }
+        console.warn("\n  Press Ctrl+C to abort, or wait 5 seconds to continue...");
+        // Give user a moment to cancel if they care
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      }
       execSync("git reset --hard origin/main", { cwd: INSTALL_DIR, stdio: "pipe" });
     } catch {
       console.error("\n❌ Failed to update source files.");

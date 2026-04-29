@@ -85,7 +85,9 @@ WantedBy=default.target
 }
 
 function buildWatcherScript(projectDirs: string[]): string {
-  const dirsArg = projectDirs.map(d => `"${d}"`).join(" ");
+  // Escape directory paths for safe use in bash: escape ", $, `, \
+  const shellEscape = (s: string) => s.replace(/["`$\\]/g, "\\$&");
+  const dirsArg = projectDirs.map(d => `"${shellEscape(d)}"`).join(" ");
   const isMac = process.platform === "darwin";
   const CONTEXTFS_BIN = path.join(os.homedir(), ".local", "bin", "contextfs");
   const HOME = os.homedir();
@@ -94,11 +96,10 @@ function buildWatcherScript(projectDirs: string[]): string {
     // fswatch: recursive, exclude summary/git/node_modules, print paths
     return `#!/bin/bash
 WATCH_DIRS=(${dirsArg})
-EXCLUDE_PATTERN="\\.(summary|git|node_modules|DS_Store)$"
 
 for dir in "\${WATCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        fswatch -r --exclude "$EXCLUDE_PATTERN" --format="%path" "$dir" 2>/dev/null | while IFS= read -r file; do
+        fswatch -r --exclude "*.summary" --exclude ".git" --exclude "node_modules" --exclude "*.DS_Store" --format="%path" "$dir" 2>/dev/null | while IFS= read -r file; do
             case "$file" in
                 *.summary|*.ts|*.tsx|*.js|*.jsx|*.py)
                     filedir="$(dirname "$file")"
@@ -116,7 +117,7 @@ wait
 WATCH_DIRS=(${dirsArg})
 for dir in "\${WATCH_DIRS[@]}"; do
     if [ -d "$dir" ]; then
-        inotifywait -rm -e modify,create -e exclude="(\\.summary$|\\.git/|node_modules/)" "$dir" 2>/dev/null | while IFS= read -r _ _ file; do
+        inotifywait -rm --exclude ".*\\.summary$" --exclude ".*\\.git.*" --exclude ".*node_modules.*" -e modify,create "$dir" 2>/dev/null | while IFS= read -r _ _ file; do
             case "$file" in
                 *.ts|*.tsx|*.js|*.jsx|*.py)
                     filedir="$(dirname "$file")"
@@ -160,7 +161,7 @@ async function startWatcherProcess(projectDirs: string[]): Promise<void> {
   }
 
   const excludeArg = isMac
-    ? ["--exclude=.*\\.summary$", "--exclude=.*\\.git.*", "--exclude=.*node_modules.*"]
+    ? ["--exclude=*.summary", "--exclude=.git", "--exclude=node_modules", "--exclude=*.DS_Store"]
     : ["--exclude", ".*\\.summary$", "--exclude", ".*\\.git.*", "--exclude", ".*node_modules.*"];
 
   const args = [

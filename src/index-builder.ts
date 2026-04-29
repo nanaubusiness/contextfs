@@ -35,8 +35,19 @@ export async function loadContextMap(rootDir: string): Promise<ContextMap> {
   const mapPath = path.join(rootDir, "context-map.json");
   const content = await fs.readFile(mapPath, "utf-8");
   try {
-    return JSON.parse(content) as ContextMap;
-  } catch {
+    const parsed = JSON.parse(content) as ContextMap;
+    // Prevent prototype pollution: reject objects with dangerous keys
+    if (parsed && typeof parsed === "object") {
+      const dangerous = ["__proto__", "constructor", "prototype"];
+      for (const key of dangerous) {
+        if (key in parsed) {
+          throw new Error(`Invalid context-map.json: contains dangerous key '${key}'. Run 'contextfs build' to regenerate.`);
+        }
+      }
+    }
+    return parsed;
+  } catch (err) {
+    if (err instanceof Error && err.message.includes("dangerous key")) throw err;
     throw new Error(`Invalid JSON in context-map.json. Run 'contextfs build' to regenerate.`);
   }
 }
