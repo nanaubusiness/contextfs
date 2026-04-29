@@ -2,29 +2,26 @@
 
 > Less context. Less tokens. Less money.
 
-ContextFS generates plain-text summaries of your codebase — once. Then any AI reads summaries instead of raw files. Same understanding, a fraction of the token cost.
+ContextFS transforms your codebase into a structured, queryable context system. AI reads plain-text summaries instead of raw files — same understanding, a fraction of the token cost. Plus automatic cross-session memory so every new session picks up where the last one left off.
 
-## How It Works
+## What It Does
 
 ```
 You ask about auth code
   → AI queries ContextFS summaries
   → Reads ~130-token summaries instead of ~690-token raw files
   → Uses ~81% fewer tokens
+
+You close a session at ~98% context (auto-compact threshold)
+  → PreCompact hook fires automatically
+  → Session is summarized: decisions, open questions, next steps
+  → Written to ~/.claude/sessions/summaries/<project-slug>/latest.json
+
+You open a new session
+  → SessionStart hook fires automatically
+  → Previous session summary is injected as context
+  → AI continues seamlessly from where you left off
 ```
-
-**Claude Code users:** No API key needed. Your subscription token is used automatically.
-
-## Works With Your Editor
-
-ContextFS summaries are plain text — any AI coding tool can read them. Claude Code gets a native MCP server that intercepts file reads and returns summary content instead of raw code. Other editors get automatic updates on file save via a background watcher.
-
-| Editor | Integration | Auto-update |
-|--------|-------------|-------------|
-| **Claude Code** | MCP server | Yes — built in |
-| **Cursor** | MCP server | Yes |
-| **Codex** | MCP server | Yes |
-| **VS Code** | MCP server | Yes |
 
 ## Install
 
@@ -34,58 +31,108 @@ curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/instal
 
 **Requirements:** Node.js 18+, `fswatch` (macOS) or `inotifywait` (Linux)
 
+After install, Claude Code MCP server is configured automatically.
+
 ## Commands
 
+| Command | What it does |
+|---------|--------------|
+| `contextfs build` | Summarize all code files with Claude Opus |
+| `contextfs build --target <file>` | Update one file's summary |
+| `contextfs build --mock` | Use mock summarizer (no API key needed) |
+| `contextfs query "<topic>"` | Search summaries for files matching a topic |
+| `contextfs demo <file>` | Preview what a summary looks like |
+| `contextfs init` | Set up ContextFS rules in a new project |
+| `contextfs context-files` | Summarize `context/*.md` files into `.summary` sidecars |
+| `contextfs compact` | Compact current session transcript into a structured summary |
+| `contextfs compact --session-id <id> --transcript-path <path> --project <path>` | Compact a specific session |
+| `contextfs session-resume` | Print previous session summary (for hook integration) |
+| `contextfs mcp` | Start MCP server over stdio (for AI tool integration) |
+| `contextfs install` | Auto-detect editors and install integrations |
+
+## Quick Start
+
+```bash
+# 1. Install
+curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
+
+# 2. Summarize your codebase
+contextfs build
+
+# 3. Ask AI about your code
+contextfs query "authentication"
+# → Returns ranked file matches with summaries
+
+# 4. Done — summaries update automatically on every file save
 ```
-contextfs install               Auto-detect editors and install
-contextfs build                 Build all summaries
-contextfs build --target <file> Update one file
-contextfs query "<text>"        Search summaries
-contextfs demo <file>           Preview summary for one file
-contextfs init                  Re-run setup in current project
-contextfs mcp                   Start MCP server (stdio, for AI tools)
-contextfs compact               Compact session history into a structured summary
-```
 
-**`contextfs mcp`** — Runs an MCP server over stdio. When connected to Claude Code (or other MCP-compatible editors), it intercepts every file read and returns `.summary` content when available. Files without summaries trigger a user approval prompt.
+## Cross-Session Memory
 
-**`contextfs compact`** — Reads conversation history, generates a structured session summary: files discussed, decisions made, open questions, and next steps. Run manually or trigger via Claude Code's FileChanged hook.
+ContextFS maintains automatic session continuity with Claude Code:
 
-**Rule:** Before reading any code file, query ContextFS first.
+- **At ~98% context:** PreCompact hook fires → `contextfs compact` writes session summary to `~/.claude/sessions/summaries/<project-slug>/latest.json`
+- **On next session start:** SessionStart hook fires → `contextfs session-resume` reads the summary and injects it as context
 
-## What You Get
+The summary includes:
+- What was accomplished
+- Decisions made
+- Open questions
+- Next steps
+- Files discussed
+- Projects affected
 
-- **After install:** `contextfs build` — Claude Opus summarizes every file once
-- **Every save:** Background watcher auto-updates that file's summary
-- **Claude Code:** MCP server returns `.summary` content automatically. Locked files (no summary) require your approval before raw access.
-- **Other editors:** Summaries update automatically on save. AI reads summaries when you query `contextfs query`.
+**No manual steps required.** It just works.
 
-## What Gets Summarized
+## How It Works
 
-ContextFS targets **source code** only:
-- TypeScript, JavaScript, Python, TSX, JSX
+### Code Summaries
 
-It skips:
-- Markdown / docs — already readable prose
-- JSON / YAML — summaries are as long as the files
-- HTML / CSS — not optimized
+1. Run `contextfs build` once — Claude Opus summarizes every file
+2. Summaries are written as `.summary` sidecar files
+3. On Claude Code: the MCP server intercepts file reads and returns `.summary` content
+4. On other editors: use `contextfs query` to search summaries; summaries auto-update on save
+
+### Context Files
+
+`contextfs context-files` summarizes `context/*.md` files (e.g. `me.md`, `work.md`, `team.md`) into `.summary` sidecars. Run after updating any context file.
+
+### Session Compaction
+
+The `PreCompact` hook in Claude Code fires at ~98% context automatically. It runs `contextfs compact` which:
+1. Reads the session transcript from the path provided by the PreCompact hook
+2. Extracts user/assistant messages
+3. Generates a structured summary via Claude Haiku
+4. Writes to `~/.claude/sessions/summaries/<project-slug>/latest.json`
+
+The `SessionStart` hook reads this file on the next launch and injects it as context.
 
 ## Summary Format
 
 Each `.summary` file is plain text:
 
 ```
-Purpose: Auth service login endpoint handling JWT issuance
-Exports: login, logout, refreshToken, validateSession
+Purpose: Handles user authentication and session management
+Exports: login, logout, verifyToken, refreshSession
 Dependencies: bcrypt, jsonwebtoken, ./db/user.repository
 Core logic:
   - login
   - logout
+  - verifyToken
   - refreshToken
-  - validateSession
 Risk: high
 hash: abc123def456
 ```
+
+## What Gets Summarized
+
+| Type | Extensions | Notes |
+|------|------------|-------|
+| TypeScript | `.ts`, `.tsx` | Full summarization |
+| JavaScript | `.js`, `.jsx` | Full summarization |
+| Python | `.py` | Full summarization |
+| Markdown | `.md` | Structure + links parsed |
+
+Skipped: JSON, YAML, HTML, CSS (already compact or prose).
 
 ## Real Results
 
@@ -102,57 +149,24 @@ ContextFS summary:          ~130 tokens
 Savings:                   ~81% fewer tokens
 ```
 
-**Every summary answers:** what the file does, what it exports, what it depends on, whether it's risky — without reading the raw file.
+## Claude Code MCP Integration
 
-## Sample Summaries (Real Claude Opus Output)
+The MCP server (`contextfs mcp`) intercepts every file read and returns `.summary` content when available. Raw file access requires user approval for files without summaries — this prevents AI from silently reading thousands of tokens when it could have used a 130-token summary.
 
-**auth-0001.ts:**
-```
-Purpose: Handles user registration with validation, password hashing, and token issuance
-Exports: register, verifyEmail
-Dependencies: bcrypt, jsonwebtoken, ./db/user.repository
-Core logic:
-  - Validates email and password strength before processing
-  - Hashes password with bcrypt before storing
-  - Issues JWT token on successful registration
-  - Sends verification email via email service
-Risk: high
-```
+Tools exposed via MCP:
+- `contextfs_read_file` — read with summary preference
+- `contextfs_query` — search summaries by topic
+- `contextfs_mcp_compact_session` — trigger session compaction
+- `contextfs_mcp_get_session_summary` — get previous session summary
 
-**payment-0001.ts:**
-```
-Purpose: Processes payment intents with Stripe, validates amounts, and handles webhook events
-Exports: createPaymentIntent, confirmPayment, handleWebhook
-Dependencies: stripe, ./db/order.repository
-Core logic:
-  - Validates payment amount and currency
-  - Creates Stripe PaymentIntent with correct metadata
-  - Confirms and captures payment on confirmation
-  - Handles Stripe webhook events for async completion
-Risk: high
-```
+## Editor Support
 
-**order-0005.ts:**
-```
-Purpose: Cancels an order, refunds payment via Stripe, and updates inventory
-Exports: cancelOrder, processRefund
-Dependencies: stripe, ./db/order.repository, ./inventory.service
-Core logic:
-  - Validates order exists and is cancellable
-  - Calls Stripe to refund payment
-  - Restores inventory counts
-  - Updates order status to cancelled
-Risk: high
-```
-
-## ContextFS in Your Editor
-
-After running `contextfs install` in a project:
-
-1. The AI automatically reads ContextFS summaries when you ask about code
-2. Every file save updates that file's summary silently in the background
-3. New files are summarized automatically when created
-4. Claude Code: the MCP server intercepts file reads and returns `.summary` content. Other editors: summaries update on save, AI uses `contextfs query` to find relevant files.
+| Editor | Integration | Auto-update |
+|--------|-------------|--------------|
+| **Claude Code** | MCP server + PreCompact/SessionStart hooks | Yes |
+| **Cursor** | MCP server | Yes |
+| **Codex** | MCP server | Yes |
+| **VS Code** | MCP server | Yes |
 
 ## License
 

@@ -6,7 +6,7 @@ import { runInit } from "./commands/init.js";
 import { runDemo } from "./commands/demo.js";
 import { runInstall } from "./commands/install.js";
 import { runMCP } from "./commands/mcp.js";
-import { runCompact } from "./commands/compact.js";
+import { runCompact, runSessionResume, runContextFilesBuild } from "./commands/compact.js";
 import { runUpdate } from "./commands/update.js";
 
 async function main() {
@@ -33,6 +33,10 @@ async function main() {
     await runMCP();
   } else if (command === "compact") {
     await runCompactCommand(args.slice(1));
+  } else if (command === "session-resume") {
+    await runSessionResumeCommand(args.slice(1));
+  } else if (command === "context-files") {
+    await runContextFilesCommand(args.slice(1));
   } else if (command === "update") {
     await runUpdateCommand(args.slice(1));
   } else if (command === "--help" || command === "-h") {
@@ -56,11 +60,14 @@ Usage:
   contextfs install codex          Set up Codex only
   contextfs install vscode         Set up VS Code only
   contextfs init                  Re-run setup in current project
-  contextfs build                 Build all summaries
+  contextfs build                 Build all code summaries
   contextfs build --target <file> Update one file
+  contextfs context-files          Summarize context/ directory files (me.md, work.md, etc.)
   contextfs demo <file>          Try it on any single file
   contextfs query "<text>"        Search summaries
   contextfs compact               Compact session history into a structured summary
+  contextfs compact --session-id <id> --project <path>  Compact specific session
+  contextfs session-resume         Print previous session summary for context injection
   contextfs update               Update to the latest version from GitHub
   contextfs update --force       Force rebuild even if already up to date
 `);
@@ -162,19 +169,44 @@ async function runInstallCommand(args: string[]) {
 }
 
 async function runCompactCommand(args: string[]) {
-  let sessionPath: string | undefined;
+  let transcriptPath: string | undefined;
+  let sessionId: string | undefined;
+  let projectPath: string | undefined;
   let rootDir = process.cwd();
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === "--session" && i + 1 < args.length) {
-      sessionPath = args[++i];
+    if (arg === "--transcript-path" && i + 1 < args.length) {
+      transcriptPath = args[++i];
+    } else if (arg === "--session-id" && i + 1 < args.length) {
+      sessionId = args[++i];
+    } else if (arg === "--project" && i + 1 < args.length) {
+      projectPath = args[++i];
     } else if (arg === "--root" && i + 1 < args.length) {
       rootDir = args[++i];
     }
   }
 
-  await runCompact({ sessionPath, rootDir });
+  await runCompact({ transcriptPath, sessionId, projectPath, rootDir });
+}
+
+async function runSessionResumeCommand(args: string[]) {
+  let projectPath: string | undefined;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--project" && i + 1 < args.length) {
+      projectPath = args[++i];
+    }
+  }
+
+  const output = await runSessionResume({ projectPath });
+  process.stdout.write(output);
+}
+
+async function runContextFilesCommand(args: string[]) {
+  const rootDir = process.cwd();
+  await runContextFilesBuild({ rootDir });
 }
 
 async function runUpdateCommand(args: string[]) {

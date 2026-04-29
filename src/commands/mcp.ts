@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as readline from "readline";
+import { runCompact, runSessionResume } from "./compact.js";
 
 // ── Session State ────────────────────────────────────────────────────────────────
 
@@ -45,13 +46,26 @@ function resetSessionState(): void {
   }
 }
 
+function normalizeRootUri(uri: string | null): string | null {
+  if (!uri) return null;
+  // Normalize: remove trailing slash, decode percent-encoding
+  let normalized = uri.replace(/\/$/, ""); // trailing slash
+  try {
+    normalized = decodeURIComponent(normalized);
+  } catch {
+    // Ignore decode errors
+  }
+  return normalized;
+}
+
 function checkSessionBoundary(rootUri: string | null): void {
-  if (rootUri && rootUri !== lastSessionRoot) {
+  const normalized = normalizeRootUri(rootUri);
+  if (normalized && normalized !== normalizeRootUri(lastSessionRoot)) {
     if (lastSessionRoot !== null) {
       // Root changed — new session, reset unlocks
       resetSessionState();
     }
-    lastSessionRoot = rootUri;
+    lastSessionRoot = normalized;
   }
 }
 
@@ -189,6 +203,31 @@ async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
           type: "object",
           properties: {},
           required: [],
+        },
+      },
+      {
+        name: "contextfs_mcp_compact_session",
+        description:
+          "Compact the current Claude Code session into a structured summary. Writes to ~/.claude/sessions/summaries/<project-hash>/latest.json for cross-session continuity.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            session_id: { type: "string", description: "The current session ID" },
+            project_path: { type: "string", description: "Absolute path to the project directory" },
+          },
+          required: ["session_id", "project_path"],
+        },
+      },
+      {
+        name: "contextfs_mcp_get_session_summary",
+        description:
+          "Get the previous session's summary for the current project. Use at session start to restore context from the last session.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            project_path: { type: "string", description: "Absolute path to the project directory" },
+          },
+          required: ["project_path"],
         },
       },
     ];
@@ -333,6 +372,58 @@ async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
       };
     }
 
+    if (toolName === "contextfs_mcp_compact_session") {
+      const sessionId = toolArgs?.session_id as string | undefined;
+      const projectPath = toolArgs?.project_path as string | undefined;
+      if (!sessionId || !projectPath) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32602, message: "Missing required parameters: session_id, project_path" },
+        };
+      }
+      try {
+        await runCompact({ sessionId, projectPath });
+      } catch (err) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          result: {
+            content: [{ type: "text" as const, text: `Session compact failed: ${err}` }],
+            isError: true,
+          },
+        };
+      }
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text" as const, text: "Session compacted." }],
+          isError: false,
+        },
+      };
+    }
+
+    if (toolName === "contextfs_mcp_get_session_summary") {
+      const projectPath = toolArgs?.project_path as string | undefined;
+      if (!projectPath) {
+        return {
+          jsonrpc: "2.0",
+          id,
+          error: { code: -32602, message: "Missing required parameter: project_path" },
+        };
+      }
+      const resumeOutput = await runSessionResume({ projectPath });
+      return {
+        jsonrpc: "2.0",
+        id,
+        result: {
+          content: [{ type: "text" as const, text: resumeOutput || "(No previous session summary found.)" }],
+          isError: false,
+        },
+      };
+    }
+
     return {
       jsonrpc: "2.0",
       id,
@@ -360,51 +451,53 @@ async function messageLoop(): Promise<void> {
     output: process.stdout,
   });
 
-  let buffer = "";
-  const lines: string[] = [];
-  let resolver: ((line: string) => void) | null = null;
-
   // Close readline on process exit to prevent handle leak
   rl.on("close", () => {});
   process.on("exit", () => rl.close());
 
-  // Async line reader
-  function readLine(): Promise<string> {
-    return new Promise((resolve) => {
-      // If we have buffered lines, return them immediately
-      if (lines.length > 0) {
-        resolve(lines.shift()!);
-        return;
-      }
-      // Otherwise wait for next chunk
-      resolver = (line: string) => resolve(line);
-    });
-  }
+  // Accumulate lines until we have valid JSON
+  let buffer = "";
 
-  // Start stdin reader
-  rl.on("line", (line: string) => {
-    if (resolver) {
-      resolver(line);
-      resolver = null;
-    } else {
-      lines.push(line);
-    }
-  });
-
-  // Read-parse-respond loop
-  while (true) {
+  for await (const line of rl) {
+    buffer += (buffer ? "\n" : "") + line;
     try {
-      const line = await readLine();
-      if (!line?.trim()) continue;
+      JSON.parse(buffer); // throws if incomplete
+    } catch {
+      continue; // need more lines
+    }
 
-      const req = JSON.parse(line) as MCPRequest;
+    // Valid JSON — process it
+    try {
+      const req = JSON.parse(buffer) as MCPRequest;
+      buffer = ""; // reset for next message
+
+      // Handle initialize: respond with capabilities THEN handle notification inline
+      if (req.method === "initialize") {
+        const params = req.params as Record<string, unknown> | undefined;
+        const rootUri = (params?.rootUri as string | undefined) ?? null;
+        checkSessionBoundary(rootUri);
+
+        const initResponse = {
+          jsonrpc: "2.0" as const,
+          id: req.id,
+          result: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            serverInfo: { name: "contextfs", version: "1.0.0" },
+          },
+        };
+        process.stdout.write(JSON.stringify(initResponse) + "\n");
+        resetSessionState(); // equivalent to notifications/initialized
+        continue;
+      }
+
       const res = await handleRequest(req);
-
       if (res.id !== null) {
         process.stdout.write(JSON.stringify(res) + "\n");
       }
     } catch (err) {
-      console.error("[contextfs mcp] Failed to parse MCP message:", err);
+      console.error("[contextfs mcp] Error:", err);
+      buffer = ""; // reset on error
     }
   }
 }
@@ -412,19 +505,7 @@ async function messageLoop(): Promise<void> {
 // ── CLI Entry Point ─────────────────────────────────────────────────────────────
 
 export async function runMCP(): Promise<void> {
-  // Send capabilities on startup
-  const capabilities = {
-    jsonrpc: "2.0",
-    id: null,
-    result: {
-      capabilities: {
-        tools: {
-          listChanged: true,
-        },
-      },
-    },
-  };
-  process.stdout.write(JSON.stringify(capabilities) + "\n");
-
+  // Wait for client to send initialize, then respond with capabilities
+  // This ensures correct MCP protocol sequence
   await messageLoop();
 }

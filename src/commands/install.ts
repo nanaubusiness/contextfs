@@ -110,6 +110,7 @@ async function setupMCP(editor: Editor): Promise<void> {
       let settings: Record<string, unknown> = {};
       const existing = await fs.readFile(settingsPath, "utf-8");
       settings = JSON.parse(existing);
+      // Preserve existing MCP servers, only add contextfs
       if (!settings.mcpServers) (settings as any).mcpServers = {};
       (settings as any).mcpServers.contextfs = MCP_CONFIG;
       await fs.writeFile(settingsPath, JSON.stringify(settings, null, 2), "utf-8");

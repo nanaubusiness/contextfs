@@ -42,6 +42,9 @@ let _resolvedApiKey: string | undefined;
 // ─── Provider Detection ────────────────────────────────────────────────────────
 
 export async function detectProvider(): Promise<string> {
+  // Already resolved — skip redundant work
+  if (_resolvedApiKey) return "anthropic";
+
   // 1. Claude Code subscription token (no cost to you)
   try {
     const settingsPath = path.join(os.homedir(), ".claude", "settings.json");
@@ -68,20 +71,32 @@ export async function detectProvider(): Promise<string> {
 
 // ─── Anthropic ───────────────────────────────────────────────────────────────
 
-async function anthropicChat(prompt: string, apiKey: string): Promise<string> {
+async function anthropicChat(prompt: string, apiKey: string, maxRetries = 3): Promise<string> {
   const { Anthropic } = await import("@anthropic-ai/sdk");
   const client = new Anthropic({ apiKey });
-  const response = await client.messages.create({
-    model: "claude-opus-4-6",
-    max_tokens: 1024,
-    messages: [{ role: "user", content: prompt }],
-  });
-  const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
-  if (!textBlock) {
-    console.warn("[contextfs] Empty response from API — no text block returned.");
-    return "";
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await client.messages.create({
+        model: "claude-haiku-4-5-20251101",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      });
+      const textBlock = response.content.find((b) => b.type === "text") as { type: "text"; text: string } | undefined;
+      if (!textBlock) {
+        console.warn("[contextfs] Empty response from API — no text block returned.");
+        return "";
+      }
+      return textBlock.text.trim();
+    } catch (err) {
+      lastError = err;
+      const delayMs = (attempt + 1) * 1000; // 1s, 2s, 3s backoff
+      console.warn(`[contextfs] API call failed (attempt ${attempt + 1}/${maxRetries}): ${err}. Retrying in ${delayMs}ms...`);
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
-  return textBlock.text.trim();
+  throw lastError;
 }
 
 // ─── Prompt template ─────────────────────────────────────────────────────────
@@ -96,11 +111,17 @@ Core logic:
   - <key behavior 2>
 Risk: <low|medium|high>
 
-CODE:
+[CODE STARTS]
 `;
 
+const CODE_END_SENTINEL = "\n[CODE ENDS]";
+
 function buildPrompt(file: ParsedFile): string {
-  return SUMMARY_PROMPT + file.content.slice(0, 8000);
+  // Delimit code clearly to prevent prompt injection
+  const codeContent = file.content.slice(0, 8000)
+    .replace(/\[CODE STARTS\]/g, "[CODE STARTS WARNING]")
+    .replace(/\[CODE ENDS\]/g, "[CODE ENDS WARNING]");
+  return SUMMARY_PROMPT + codeContent + CODE_END_SENTINEL;
 }
 
 // ─── Factory ─────────────────────────────────────────────────────────────────
@@ -113,13 +134,14 @@ export async function createLLMSummarizer(): Promise<Summarizer> {
 
   return {
     provider: "anthropic",
-    model: "claude-opus-4-6",
+    model: "claude-haiku-4-5-20251101",
     async summarize(file: ParsedFile) {
       try {
         return await anthropicChat(buildPrompt(file), apiKey);
       } catch (err) {
-        console.warn("[contextfs] API call failed, using mock summary. Set ANTHROPIC_API_KEY for real summaries.");
-        return `[MOCK] ${file.content.slice(0, 100)}`;
+        // Don't silently produce fake summaries — fail fast so the user knows
+        console.error(`[contextfs] API call failed: ${err}. Set ANTHROPIC_API_KEY for real summaries.`);
+        process.exit(1);
       }
     },
   };

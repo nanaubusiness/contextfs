@@ -16,7 +16,8 @@ async function setupHook(projectDir?: string): Promise<void> {
   const settingsPath = path.join(homeDir, ".claude", "settings.json");
   const cwd = projectDir || process.cwd();
   const safeCwd = cwd.replace(/'/g, "'\\''");
-  const hookCommand = `contextfs build --root '${safeCwd}' --target '$f'`;
+  // Read file path from hook stdin JSON using jq, skip if empty
+  const hookCommand = `jq -r '.tool_input.file_path // empty' | { read -r f; [ -n "$f" ] && contextfs build --root '${safeCwd}' --target "$f"; } 2>/dev/null || true`;
 
   const newHook = {
     type: "command",

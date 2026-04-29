@@ -73,12 +73,13 @@ export async function runQuery(args: {
           plainText: summaryContent,
         });
       }
-    } catch {
-      // Skip files that can't be read
+    } catch (err) {
+      // Tell user which file failed — helps debug missing/broken summaries
+      process.stderr.write(`[contextfs query] Skipping ${relativePath}: ${err}\n`);
     }
   }
 
-  results.sort((a, b) => b.score - a.score);
+  results.sort((a, b) => b.score - a.score || a.relativePath.localeCompare(b.relativePath));
   const top = results.slice(0, limit);
 
   if (top.length === 0) {
