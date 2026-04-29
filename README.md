@@ -31,13 +31,13 @@ curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/instal
 
 **Requirements:** Node.js 18+, `fswatch` (macOS) or `inotifywait` (Linux)
 
-After install, Claude Code MCP server is configured automatically.
+After install, ContextFS MCP server is configured for your editor automatically.
 
 ## Commands
 
 | Command | What it does |
 |---------|--------------|
-| `contextfs build` | Summarize all code files with Claude Opus |
+| `contextfs build` | Summarize all code files with Claude Haiku |
 | `contextfs build --target <file>` | Update one file's summary |
 | `contextfs build --mock` | Use mock summarizer (no API key needed) |
 | `contextfs query "<topic>"` | Search summaries for files matching a topic |
@@ -56,21 +56,24 @@ After install, Claude Code MCP server is configured automatically.
 # 1. Install
 curl -fsSL https://raw.githubusercontent.com/nanaubusiness/contextfs/main/install.sh | sh
 
-# 2. Summarize your codebase
+# 2. Connect your editor (Claude Code, Cursor, Codex, or VS Code)
+contextfs install
+
+# 3. Summarize your codebase
 contextfs build
 
-# 3. Ask AI about your code
+# 4. Ask AI about your code
 contextfs query "authentication"
 # → Returns ranked file matches with summaries
 
-# 4. Done — summaries update automatically on every file save
+# 5. Done — summaries update automatically on every file save
 ```
 
 ## Cross-Session Memory
 
 ContextFS maintains automatic session continuity with Claude Code:
 
-- **At ~98% context:** PreCompact hook fires → `contextfs compact` writes session summary to `~/.claude/sessions/summaries/<project-slug>/latest.json`
+- **At ~65% context:** PreCompact hook fires → `contextfs compact` writes session summary to `~/.claude/sessions/summaries/<project-slug>/latest.json`
 - **On next session start:** SessionStart hook fires → `contextfs session-resume` reads the summary and injects it as context
 
 The summary includes:
@@ -87,7 +90,7 @@ The summary includes:
 
 ### Code Summaries
 
-1. Run `contextfs build` once — Claude Opus summarizes every file
+1. Run `contextfs build` once — Claude Haiku summarizes every file
 2. Summaries are written as `.summary` sidecar files
 3. On Claude Code: the MCP server intercepts file reads and returns `.summary` content
 4. On other editors: use `contextfs query` to search summaries; summaries auto-update on save
@@ -98,7 +101,7 @@ The summary includes:
 
 ### Session Compaction
 
-The `PreCompact` hook in Claude Code fires at ~98% context automatically. It runs `contextfs compact` which:
+The `PreCompact` hook in Claude Code fires at ~65% context automatically. It runs `contextfs compact` which:
 1. Reads the session transcript from the path provided by the PreCompact hook
 2. Extracts user/assistant messages
 3. Generates a structured summary via Claude Haiku
@@ -136,7 +139,7 @@ Skipped: JSON, YAML, HTML, CSS (already compact or prose).
 
 ## Real Results
 
-Tested on **1,995 production code files** with Claude Opus.
+Tested on **1,995 production code files** with Claude Haiku.
 
 | Metric | Value |
 |--------|-------|
