@@ -12,7 +12,7 @@ You ask about auth code
   → Reads ~130-token summaries instead of ~690-token raw files
   → Uses ~81% fewer tokens
 
-You close a session at ~98% context (auto-compact threshold)
+You close a session at ~65% context (auto-compact threshold)
   → PreCompact hook fires automatically
   → Session is summarized: decisions, open questions, next steps
   → Written to ~/.claude/sessions/summaries/<project-slug>/latest.json
