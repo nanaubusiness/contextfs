@@ -79,7 +79,7 @@ async function anthropicChat(prompt: string, apiKey: string, maxRetries = 3): Pr
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const response = await client.messages.create({
-        model: "claude-haiku-4-5-20251101",
+        model: "claude-opus-4-7-20250124",
         max_tokens: 1024,
         messages: [{ role: "user", content: prompt }],
       });
@@ -134,7 +134,7 @@ export async function createLLMSummarizer(): Promise<Summarizer> {
 
   return {
     provider: "anthropic",
-    model: "claude-haiku-4-5-20251101",
+    model: "claude-opus-4-7-20250124",
     async summarize(file: ParsedFile) {
       try {
         return await anthropicChat(buildPrompt(file), apiKey);

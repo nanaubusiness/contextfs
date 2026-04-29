@@ -37,7 +37,7 @@ After install, ContextFS MCP server is configured for your editor automatically.
 
 | Command | What it does |
 |---------|--------------|
-| `contextfs build` | Summarize all code files with Claude Haiku |
+| `contextfs build` | Summarize all code files with Claude Opus 4.7 |
 | `contextfs build --target <file>` | Update one file's summary |
 | `contextfs build --mock` | Use mock summarizer (no API key needed) |
 | `contextfs query "<topic>"` | Search summaries for files matching a topic |
@@ -90,7 +90,7 @@ The summary includes:
 
 ### Code Summaries
 
-1. Run `contextfs build` once — Claude Haiku summarizes every file
+1. Run `contextfs build` once — Claude Opus 4.7 summarizes every file
 2. Summaries are written as `.summary` sidecar files
 3. On Claude Code: the MCP server intercepts file reads and returns `.summary` content
 4. On other editors: use `contextfs query` to search summaries; summaries auto-update on save
@@ -104,7 +104,7 @@ The summary includes:
 The `PreCompact` hook in Claude Code fires at ~65% context automatically. It runs `contextfs compact` which:
 1. Reads the session transcript from the path provided by the PreCompact hook
 2. Extracts user/assistant messages
-3. Generates a structured summary via Claude Haiku
+3. Generates a structured summary via Claude Opus 4.7
 4. Writes to `~/.claude/sessions/summaries/<project-slug>/latest.json`
 
 The `SessionStart` hook reads this file on the next launch and injects it as context.
@@ -139,7 +139,7 @@ Skipped: JSON, YAML, HTML, CSS (already compact or prose).
 
 ## Real Results
 
-Tested on **1,995 production code files** with Claude Haiku.
+Tested on **1,995 production code files** with Claude Opus 4.7.
 
 | Metric | Value |
 |--------|-------|

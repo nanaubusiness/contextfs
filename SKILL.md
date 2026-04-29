@@ -10,7 +10,7 @@ ContextFS generates plain-text summaries of your codebase. Claude reads summarie
 ## Commands
 
 ### /contextfs build
-Summarize every code file in the current project using Claude Haiku.
+Summarize every code file in the current project using Claude Opus 4.7.
 
 ```
 /contextfs build
@@ -78,7 +78,7 @@ hash: abc123def456
 
 ## How It Works
 
-1. **`/contextfs build`** — Claude Haiku summarizes all code files, writes `*.summary` sidecar files and `context-map.json`
+1. **`/contextfs build`** — Claude Opus 4.7 summarizes all code files, writes `*.summary` sidecar files and `context-map.json`
 2. **Background watcher** — Every file save triggers `contextfs build --target <file>` automatically (all editors)
 3. **`/contextfs query`** — Searches summaries by relevance, returns top matches with scores
 4. **Claude Code (MCP)** — The MCP server intercepts file reads and returns `.summary` content automatically when available. Files without summaries trigger an approval prompt.
