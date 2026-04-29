@@ -141,7 +141,7 @@ export async function createLLMSummarizer(): Promise<Summarizer> {
       } catch (err) {
         // Don't silently produce fake summaries — fail fast so the user knows
         console.error(`[contextfs] API call failed: ${err}. Set ANTHROPIC_API_KEY for real summaries.`);
-        process.exit(1);
+        throw new Error(`Summarization failed: ${err}`);
       }
     },
   };

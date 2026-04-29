@@ -49,6 +49,11 @@ export async function runQuery(args: {
 }): Promise<void> {
   const { rootDir, queryText, limit = 5 } = args;
 
+  if (!queryText.trim()) {
+    console.log("No results found.");
+    return;
+  }
+
   const contextMap = await loadContextMap(rootDir);
   const results: Array<{
     relativePath: string;

@@ -72,7 +72,12 @@ async function processFile(
 
   const withHash = `${summaryContent}\nhash: ${currentHash}`;
 
-  await fs.writeFile(summaryPath, withHash, "utf-8");
+  try {
+    await fs.writeFile(summaryPath, withHash, "utf-8");
+  } catch (err) {
+    console.error(`[contextfs] Failed to write summary ${summaryPath}: ${err}`);
+    return { path: filePath, content: "", changed: false };
+  }
 
   return { path: filePath, content: withHash, changed: true };
 }
@@ -100,8 +105,12 @@ async function processTargetFile(
       await saveContextMap(rootDir, { ...existing, files: updated });
     } catch {
       // No existing context-map — create new one
-      const contextMap = await buildContextMap(rootDir, new Map([[absolutePath, result.content]]));
-      await saveContextMap(rootDir, contextMap);
+      try {
+        const contextMap = await buildContextMap(rootDir, new Map([[absolutePath, result.content]]));
+        await saveContextMap(rootDir, contextMap);
+      } catch (err) {
+        console.error(`[contextfs] Warning: failed to save context-map: ${err}`);
+      }
     }
   }
 }

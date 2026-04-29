@@ -81,7 +81,9 @@ async function fileExists(p: string): Promise<boolean> {
 }
 
 async function readSummaryOrRaw(filePath: string): Promise<string> {
-  const summaryPath = filePath + ".summary";
+  // Canonicalize path to prevent path traversal attacks (e.g., /project/../etc/passwd)
+  const canonicalPath = path.resolve(filePath);
+  const summaryPath = canonicalPath + ".summary";
 
   // Always prefer summary if it exists
   if (await fileExists(summaryPath)) {
@@ -90,16 +92,16 @@ async function readSummaryOrRaw(filePath: string): Promise<string> {
   }
 
   // Summary doesn't exist — check if this file is unlocked
-  if (unlockedFiles.has(filePath)) {
-    const content = await fs.readFile(filePath, "utf-8");
+  if (unlockedFiles.has(canonicalPath)) {
+    const content = await fs.readFile(canonicalPath, "utf-8");
     return content;
   }
 
   // File is locked — prompt user
   const approved = await promptApproval(filePath);
   if (approved) {
-    unlockedFiles.add(filePath);
-    return await fs.readFile(filePath, "utf-8");
+    unlockedFiles.add(canonicalPath);
+    return await fs.readFile(canonicalPath, "utf-8");
   }
 
   return `ACCESS DENIED: ${path.basename(filePath)} has no .summary file and raw access was not approved.\nAsk the user to run: contextfs build --target <path>\nto generate a summary first.`;
@@ -315,13 +317,13 @@ async function handleRequest(req: MCPRequest): Promise<MCPResponse> {
             isError: false,
           },
         };
-      } catch {
+      } catch (err) {
         return {
           jsonrpc: "2.0",
           id,
           result: {
-            content: [{ type: "text" as const, text: "Error querying context-map.json" }],
-            isError: false,
+            content: [{ type: "text" as const, text: `Error querying context-map.json: ${err}` }],
+            isError: true,
           },
         };
       }
@@ -457,9 +459,19 @@ async function messageLoop(): Promise<void> {
 
   // Accumulate lines until we have valid JSON
   let buffer = "";
+  const MAX_BUFFER_SIZE = 1024 * 1024; // 1MB limit to prevent DoS
 
   for await (const line of rl) {
     buffer += (buffer ? "\n" : "") + line;
+    if (buffer.length > MAX_BUFFER_SIZE) {
+      buffer = "";
+      process.stdout.write(JSON.stringify({
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32700, message: "Parse error: message too large" },
+      }) + "\n");
+      continue;
+    }
     try {
       JSON.parse(buffer); // throws if incomplete
     } catch {
@@ -497,6 +509,11 @@ async function messageLoop(): Promise<void> {
       }
     } catch (err) {
       console.error("[contextfs mcp] Error:", err);
+      process.stdout.write(JSON.stringify({
+        jsonrpc: "2.0",
+        id: null,
+        error: { code: -32603, message: "Internal error" },
+      }) + "\n");
       buffer = ""; // reset on error
     }
   }

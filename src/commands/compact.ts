@@ -205,7 +205,8 @@ function projectToSlug(projectPath: string): string {
   // Claude Code stores projects in folders named by encoding the path:
   // /Users/admin/Downloads/Executive Assistant → -Users-admin-Downloads-Executive-Assistant
   // Slashes become hyphens, spaces become hyphens, leading slash becomes a hyphen
-  return projectPath.replace(/\//g, "-").replace(/ /g, "-").replace(/^-/, "-");
+  // Remove .. sequences to prevent path traversal attacks
+  return projectPath.replace(/\//g, "-").replace(/ /g, "-").replace(/^-/, "-").replace(/\.\./g, "-");
 }
 
 function getSummaryPath(projectPath: string): string {
@@ -248,7 +249,7 @@ export async function runCompact(args: {
 
   if (!resolvedSessionId) {
     console.error("[contextfs compact] No session ID. Use --session-id or run via PreCompact hook.");
-    process.exit(1);
+    throw new Error("No session ID provided");
   }
 
   console.error(`[contextfs compact] Session: ${resolvedSessionId}`);
@@ -271,6 +272,7 @@ export async function runCompact(args: {
 
   if (!transcriptText.trim()) {
     console.error("[contextfs compact] No transcript content found.");
+    return;
   }
 
   // Generate summary
@@ -354,7 +356,9 @@ export async function runCompact(args: {
     console.error(`[contextfs compact] Summary: ${sessionSummary.summary.slice(0, 120)}...`);
   } finally {
     await lockFd.close();
-    await fs.unlink(lockPath).catch(() => {}); // Release lock
+    await fs.unlink(lockPath).catch((err) => {
+      console.error(`[contextfs compact] Warning: failed to release lock ${lockPath}: ${err}`);
+    });
   }
 }
 
@@ -388,8 +392,12 @@ export async function runSessionResume(args: { projectPath?: string } = {}): Pro
     const content = await fs.readFile(summaryPath, "utf-8");
     const summary: SessionSummary = JSON.parse(content);
     return formatSessionSummaryForContext(summary);
-  } catch {
-    // No previous session found — this is fine for first sessions
+  } catch (err: any) {
+    if (err?.code === "ENOENT") {
+      // No previous session found — this is fine for first sessions
+      return "";
+    }
+    console.error(`[contextfs compact] Warning: failed to read session summary: ${err}`);
     return "";
   }
 }

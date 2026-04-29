@@ -76,8 +76,8 @@ function parsePython(content: string, filePath: string): ParsedFile {
   const dependencies: string[] = [];
 
   // Match function definitions: def function_name(...) — multiline-safe
-  // Handles: def foo():, def foo(x: int):, def foo(\n  param,\n):, async def foo():
-  const funcMatches = content.matchAll(/^(\basync\b\s*)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\([^)]*\)/gm);
+  // Handles: def foo():, def foo(x: int):, def foo(\n  param,\n):, async def foo(), def foo(bar(x)):
+  const funcMatches = content.matchAll(/^(\basync\b\s*)?def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((?:[^()]+|\([^()]*\))*\)/gm);
   for (const match of funcMatches) {
     exports.push(match[2]); // group 2 is the function name
   }
@@ -197,9 +197,9 @@ function parseJSTS(content: string, filePath: string): ParsedFile {
   // Strip comments to avoid matching export keywords inside comments
   const code = stripComments(content);
 
-  // Match named exports: export const/function/class/let/var name
+  // Match named exports: export const/function/class/let/var name, and async const/let/var
   const keywordExportRE =
-    /export\s+(?:default\s+)?(?:const|function|class|interface|type|async\s+function|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+    /export\s+(?:default\s+)?(?:const|function|class|interface|type|async\s+function|async\s+(?:const|let|var)|let|var)\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g;
   for (const match of code.matchAll(keywordExportRE)) {
     if (match[1] && !seenExports.has(match[1])) {
       seenExports.add(match[1]);
@@ -237,6 +237,14 @@ function parseJSTS(content: string, filePath: string): ParsedFile {
   );
   for (const match of importMatches) {
     dependencies.push(match[1]);
+  }
+
+  // Match side-effect imports: import 'module' or import "module" (no from clause)
+  const sideEffectImportMatches = code.matchAll(/import\s+['"]([^'"]+)['"]/g);
+  for (const match of sideEffectImportMatches) {
+    if (!dependencies.includes(match[1])) {
+      dependencies.push(match[1]);
+    }
   }
 
   // Match CommonJS require: const/let/var name = require('module')
@@ -279,8 +287,8 @@ function parseMarkdown(content: string, filePath: string): ParsedFile {
     }
   }
 
-  // Extract link URLs as dependencies
-  const linkMatches = content.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g);
+  // Extract link URLs as dependencies (stop at common trailing punctuation)
+  const linkMatches = content.matchAll(/\[([^\]]+)\]\(([^\s.,;:!?)]+)\)/g);
   for (const match of linkMatches) {
     const url = match[2];
     if (url.startsWith("http") && !dependencies.includes(url)) {
