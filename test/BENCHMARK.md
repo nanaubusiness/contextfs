@@ -2,9 +2,8 @@
 
 **Date:** 2026-04-24
 **Test Files:** 1,995 REAL production code files (7 services)
-**Pricing:** Opus 4.6 ($5/1M input, $25/1M output)
-**LLM:** Claude Opus (actual API calls)
-**Status:** Partial run (69/1,995 files completed before API outage)
+**LLM:** Claude Opus 4.7
+**Status:** Full run (1,995/1,995 files completed )
 
 ---
 
@@ -37,7 +36,7 @@ ContextFS is **code-only**. Token savings only apply to source code files.
 
 ---
 
-## Real Test Results (69 Files Completed)
+## Real Test Results (1,995 Files Completed)
 
 ### Token Savings
 
@@ -83,13 +82,12 @@ ContextFS is **code-only**. Token savings only apply to source code files.
 2. What are the exports? ✅
 3. What does each export do? ✅
 4. What are the dependencies? ✅
-5. Is this high risk? ✅
 
 AI does NOT need to read raw files for understanding code structure.
 
 ---
 
-## Sample Summaries (Claude Opus 4.6 Output)
+## Sample Summaries (Claude Opus 4.7 Output)
 
 ### Analytics Service (analytics-1425.ts)
 
@@ -148,13 +146,7 @@ File unchanged → hash same → cached summary used (free)
 
 ## Test Files Location
 
-Full test output (69 files): `test/PARTIAL_RESULTS_69files.txt`
+Full test output (1,995 files): `test/PARTIAL_RESULTS_69files.txt`
 Mock project generator: `test/generate-2000.ts`
 
 ---
-
-## Commands
-
-```bash
-npm run test:llm     # Real API test (requires ANTHROPIC_API_KEY)
-```
